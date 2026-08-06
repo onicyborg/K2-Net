@@ -1,0 +1,257 @@
+// K2-Net — Database Design
+// Generated: 6 Agustus 2026
+// Tool: dbdiagram.io (https://dbdiagram.io)
+// Note: Semua primary key menggunakan UUID v7 format K2-{PREFIX}-{uuid7}
+
+//////////////////////////////////////////////////////////////
+// TABLE: users
+// Deskripsi: Multi-role users (admin + pelanggan).
+// Pelanggan login via portal pelanggan, admin login via admin panel.
+//////////////////////////////////////////////////////////////
+Table users as U {
+  id string [pk, default: "uuidv7('USR')"]
+  name varchar(255) [not null]
+  email varchar(255) [not null, unique]
+  password_hash varchar(255) [not null]
+  role enum('admin', 'pelanggan') [not null, default: 'pelanggan']
+  remember_token varchar(100)
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp
+
+  Indexes {
+    email [unique]
+    role
+  }
+}
+
+//////////////////////////////////////////////////////////////
+// TABLE: customers
+// Deskripsi: Data pelanggan internet.
+// Berelasi one-to-one ke users (pelanggan).
+// Soft delete: tidak boleh hard delete jika ada riwayat invoice.
+//////////////////////////////////////////////////////////////
+Table customers as C {
+  id string [pk, default: "uuidv7('CUS')"]
+  user_id string [unique, not null, note: "FK ke users (pelanggan saja)"]
+  code varchar(50) [not null, unique, note: "Kode pelanggan, misal: CUS001"]
+  name varchar(255) [not null, note: "Nama lengkap pelanggan"]
+  whatsapp_number varchar(20) [not null, note: "Nomor WA dengan format 08xx"]
+  whatsapp_number_full varchar(25) [note: "Nomor lengkap dengan kode negara +62"]
+  email varchar(255)
+  address text [not null, note: "Alamat pemasangan"]
+  package_id string [not null, note: "FK ke packages"]
+  status enum('aktif', 'isolir', 'nonaktif') [not null, default: 'aktif']
+  notes text
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp
+
+  Indexes {
+    code [unique]
+    user_id [unique]
+    status
+    package_id
+  }
+}
+
+//////////////////////////////////////////////////////////////
+// TABLE: packages
+// Deskripsi: Master data paket internet.
+// Soft delete: tidak boleh hard delete jika ada pelanggan aktif.
+//////////////////////////////////////////////////////////////
+Table packages as P {
+  id string [pk, default: "uuidv7('PKG')"]
+  name varchar(255) [not null, note: "Nama paket, misal: 'Paket 10 Mbps'"]
+  speed varchar(50) [note: "Kecepatan, misal: '10 Mbps'"]
+  price decimal(12, 0) [not null, note: "Harga bulanan dalam Rupiah"]
+  description text
+  is_active boolean [not null, default: true]
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp
+
+  Indexes {
+    is_active
+  }
+}
+
+//////////////////////////////////////////////////////////////
+// TABLE: invoices
+// Deskripsi: Invoice bulanan per pelanggan.
+// Tidak soft delete — audit trail finansial.
+// Status machine: belum_bayar → menunggu_verifikasi → lunas/ditolak
+//////////////////////////////////////////////////////////////
+Table invoices as I {
+  id string [pk, default: "uuidv7('INV')"]
+  invoice_number varchar(100) [not null, unique, note: "Format: INV-YYYYMM-CUSxxx-NNN"]
+  customer_id string [not null, note: "FK ke customers"]
+  billing_period date [not null, note: "Periode tagihan (tanggal 1 bulan tersebut)"]
+  amount decimal(12, 0) [not null, note: "Nominal tagihan (dari paket saat generate)"]
+  due_date date [not null, note: "Tanggal jatuh tempo"]
+  status enum('belum_bayar', 'menunggu_verifikasi', 'lunas', 'ditolak') [not null, default: 'belum_bayar']
+  rejection_reason text [note: "Alasan penolakan (jika ditolak)"]
+  issued_at timestamp [not null, note: "Tanggal terbit invoice"]
+  paid_at timestamp [note: "Tanggal pelunasan (jika lunas)"]
+  created_at timestamp
+  updated_at timestamp
+
+  Indexes {
+    invoice_number [unique]
+    customer_id
+    status
+    billing_period
+    due_date
+    (customer_id, billing_period) [unique, note: "Cegah duplikat invoice per pelanggan per periode"]
+  }
+}
+
+//////////////////////////////////////////////////////////////
+// TABLE: payment_proofs
+// Deskripsi: Bukti transfer yang diunggah pelanggan.
+// Tidak soft delete — bukti transaksi finansial.
+//////////////////////////////////////////////////////////////
+Table payment_proofs as PP {
+  id string [pk, default: "uuidv7('PAY')"]
+  invoice_id string [not null, unique, note: "FK ke invoices — 1 invoice = 1 bukti"]
+  customer_id string [not null, note: "FK ke customers (denormalisasi untuk query cepat)"]
+  file_name varchar(255) [not null, note: "Nama file asli (pdf/jpg/png)"]
+  file_path varchar(500) [not null, note: "Path storage (storage/app/payment-proofs/)"]
+  file_size integer [note: "Ukuran file dalam bytes"]
+  file_type varchar(20) [not null, note: "Ekstensi: pdf/jpg/png"]
+  uploaded_at timestamp [not null, default: 'now()']
+  created_at timestamp
+  updated_at timestamp
+
+  Indexes {
+    invoice_id [unique]
+    customer_id
+  }
+}
+
+//////////////////////////////////////////////////////////////
+// TABLE: notification_logs
+// Deskripsi: Log pengiriman notifikasi (WA/Email).
+// Cegah duplikat: (invoice_id + notification_type + DATE(sent_at)) unique.
+//////////////////////////////////////////////////////////////
+Table notification_logs as NL {
+  id string [pk, default: "uuidv7('LOG')"]
+  invoice_id string [not null, note: "FK ke invoices"]
+  customer_id string [not null, note: "FK ke customers (denormalisasi)"]
+  notification_type enum('reminder_h3', 'reminder_h0', 'reminder_h3_late', 'confirmation', 'rejection') [not null]
+  channel enum('whatsapp', 'email') [not null]
+  status enum('pending', 'sent', 'failed') [not null, default: 'pending']
+  sent_at timestamp [note: "Waktu berhasil terkirim"]
+  failed_at timestamp [note: "Waktu gagal"]
+  error_message text [note: "Pesan error jika gagal"]
+  meta json [note: "Extra data: wa_number, email, message_id, dll."]
+  created_at timestamp
+  updated_at timestamp
+
+  Indexes {
+    invoice_id
+    customer_id
+    notification_type
+    status
+    sent_at
+    (invoice_id, notification_type, sent_at) [note: "Cegah notifikasi duplikat per hari"]
+  }
+}
+
+//////////////////////////////////////////////////////////////
+// TABLE: audit_logs
+// Deskripsi: Audit trail untuk perubahan kritikal.
+// Immutable — hanya created_at, tidak ada update/delete.
+//////////////////////////////////////////////////////////////
+Table audit_logs as AL {
+  id string [pk, default: "uuidv7('AUD')"]
+  actor_id string [note: "FK ke users ( siapa yang melakukan aksi )"]
+  actor_type varchar(50) [note: "'admin' atau 'system' (untuk cron job)"]
+  action varchar(100) [not null, note: "approve, reject, create, update, deactivate, dll."]
+  entity_type varchar(100) [not null, note: "Invoice, PaymentProof, Customer, dll."]
+  entity_id string [not null, note: "ID entity yang diubah"]
+  old_values json [note: "Data sebelum perubahan"]
+  new_values json [note: "Data sesudah perubahan"]
+  description text [note: "Deskripsi human-readable, misal: 'approve payment_proof INV-202608-CUS001-001'"]
+  ip_address varchar(45)
+  user_agent text
+  created_at timestamp [not null]
+
+  Indexes {
+    actor_id
+    entity_type
+    entity_id
+    action
+    created_at
+  }
+}
+
+//////////////////////////////////////////////////////////////
+// TABLE: system_configurations
+// Deskripsi: Konfigurasi dinamis yang bisa diedit admin.
+// Tidak soft delete.
+//////////////////////////////////////////////////////////////
+Table system_configurations as SC {
+  id string [pk, default: "uuidv7('CFG')"]
+  key varchar(100) [not null, unique, note: "Kode konfigurasi, misal: invoice_generate_day"]
+  value text [note: "Nilai konfigurasi (string/JSON/number)"]
+  type enum('string', 'number', 'boolean', 'json') [not null, default: 'string']
+  description text [note: "Deskripsi singkat konfigurasi"]
+  group_name varchar(100) [note: "Group: general, notification, billing, dll."]
+  is_editable boolean [not null, default: true, note: "False untuk konfigurasi sistem"]
+  created_at timestamp
+  updated_at timestamp
+
+  Indexes {
+    key [unique]
+    group_name
+  }
+}
+
+//////////////////////////////////////////////////////////////
+// TABLE: jwt_blacklist
+// Deskripsi: Blacklist JWT token yang sudah di-logout/revoked.
+// Untuk stateless JWT validation tanpa Redis/cache.
+//////////////////////////////////////////////////////////////
+Table jwt_blacklist as JB {
+  id string [pk, default: "uuidv7('JBL')"]
+  token_id varchar(255) [not null, unique, note: "JWT 'jti' claim (unique token identifier)"]
+  token_hash varchar(255) [not null, unique, note: "SHA256 hash dari token untuk lookup cepat"]
+  revoked_by string [note: "User ID yang melakukan logout"]
+  expires_at timestamp [not null, note: "Waktu expired token asli"]
+  blacklisted_at timestamp [not null, default: 'now()']
+
+  Indexes {
+    token_id [unique]
+    token_hash [unique]
+    expires_at
+  }
+}
+
+//////////////////////////////////////////////////////////////
+// FOREIGN KEYS
+//////////////////////////////////////////////////////////////
+
+// users → customers (1:1, untuk pelanggan)
+Ref: users.id < customers.user_id [delete: cascade]
+
+// packages → customers (1:N)
+Ref: packages.id < customers.package_id [delete: restrict]
+
+// customers → invoices (1:N)
+Ref: customers.id < invoices.customer_id [delete: restrict]
+
+// invoices → payment_proofs (1:0-1)
+Ref: invoices.id < payment_proofs.invoice_id [delete: cascade]
+
+// customers → payment_proofs (1:N, denormalisasi)
+Ref: customers.id < payment_proofs.customer_id [delete: restrict]
+
+// invoices → notification_logs (1:N)
+Ref: invoices.id < notification_logs.invoice_id [delete: cascade]
+
+// customers → notification_logs (1:N, denormalisasi)
+Ref: customers.id < notification_logs.customer_id [delete: cascade]
+
+// users → audit_logs (1:N, actor)
+Ref: users.id < audit_logs.actor_id [delete: set null]
