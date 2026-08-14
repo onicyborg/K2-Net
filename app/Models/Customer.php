@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Enums\CustomerStatus;
+use App\Traits\HasUuidV7;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,7 +11,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Customer extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, HasUuidV7;
+
+    protected $primaryKey = 'id';
+    protected $keyType = 'string';
+    public $incrementing = false;
 
     protected $fillable = [
         'user_id',
@@ -24,6 +28,7 @@ class Customer extends Model
         'package_id',
         'status',
         'notes',
+        'portal_code',
     ];
 
     public function user(): BelongsTo
@@ -74,5 +79,19 @@ class Customer extends Model
             'nonaktif' => ['class' => 'dark', 'label' => 'Nonaktif'],
             default => ['class' => 'secondary', 'label' => $this->status],
         };
+    }
+
+    public function getPortalCode(): string
+    {
+        if (empty($this->portal_code)) {
+            $this->update(['portal_code' => \Illuminate\Support\Str::random(16)]);
+        }
+        return $this->portal_code;
+    }
+
+    public function getPortalUrl(): string
+    {
+        $code = $this->getPortalCode();
+        return url("/portal/bayar/{$code}");
     }
 }

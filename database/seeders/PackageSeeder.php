@@ -11,7 +11,6 @@ class PackageSeeder extends Seeder
     {
         $packages = [
             [
-                'id' => 'K2-PKG-01HQ000000000000001',
                 'name' => 'Paket Basic',
                 'speed' => '5 Mbps',
                 'price' => 100000,
@@ -19,7 +18,6 @@ class PackageSeeder extends Seeder
                 'is_active' => true,
             ],
             [
-                'id' => 'K2-PKG-01HQ000000000000002',
                 'name' => 'Paket Standard',
                 'speed' => '10 Mbps',
                 'price' => 150000,
@@ -27,7 +25,6 @@ class PackageSeeder extends Seeder
                 'is_active' => true,
             ],
             [
-                'id' => 'K2-PKG-01HQ000000000000003',
                 'name' => 'Paket Premium',
                 'speed' => '20 Mbps',
                 'price' => 250000,
@@ -35,7 +32,6 @@ class PackageSeeder extends Seeder
                 'is_active' => true,
             ],
             [
-                'id' => 'K2-PKG-01HQ000000000000004',
                 'name' => 'Paket Business',
                 'speed' => '50 Mbps',
                 'price' => 500000,
@@ -46,7 +42,7 @@ class PackageSeeder extends Seeder
 
         foreach ($packages as $package) {
             Package::updateOrCreate(
-                ['id' => $package['id']],
+                ['name' => $package['name']],
                 $package
             );
         }

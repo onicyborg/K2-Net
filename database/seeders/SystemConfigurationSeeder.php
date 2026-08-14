@@ -12,7 +12,6 @@ class SystemConfigurationSeeder extends Seeder
         $configs = [
             // Billing
             [
-                'id' => 'K2-CFG-01HQ000000000000001',
                 'key' => 'invoice_generate_day',
                 'value' => '25',
                 'type' => 'number',
@@ -21,7 +20,6 @@ class SystemConfigurationSeeder extends Seeder
                 'is_editable' => true,
             ],
             [
-                'id' => 'K2-CFG-01HQ000000000000002',
                 'key' => 'invoice_due_day',
                 'value' => '5',
                 'type' => 'number',
@@ -30,7 +28,6 @@ class SystemConfigurationSeeder extends Seeder
                 'is_editable' => true,
             ],
             [
-                'id' => 'K2-CFG-01HQ000000000000003',
                 'key' => 'notification_reminder_days',
                 'value' => json_encode([-3, 0, 3]),
                 'type' => 'json',
@@ -40,7 +37,6 @@ class SystemConfigurationSeeder extends Seeder
             ],
             // General
             [
-                'id' => 'K2-CFG-01HQ000000000000004',
                 'key' => 'upload_max_size_kb',
                 'value' => '5120',
                 'type' => 'number',
@@ -49,7 +45,6 @@ class SystemConfigurationSeeder extends Seeder
                 'is_editable' => true,
             ],
             [
-                'id' => 'K2-CFG-01HQ000000000000005',
                 'key' => 'upload_allowed_types',
                 'value' => json_encode(['pdf', 'jpg', 'jpeg', 'png']),
                 'type' => 'json',
@@ -58,7 +53,6 @@ class SystemConfigurationSeeder extends Seeder
                 'is_editable' => true,
             ],
             [
-                'id' => 'K2-CFG-01HQ000000000000006',
                 'key' => 'company_name',
                 'value' => 'K2-Net',
                 'type' => 'string',
@@ -67,7 +61,6 @@ class SystemConfigurationSeeder extends Seeder
                 'is_editable' => true,
             ],
             [
-                'id' => 'K2-CFG-01HQ000000000000007',
                 'key' => 'company_address',
                 'value' => '',
                 'type' => 'string',
@@ -76,7 +69,6 @@ class SystemConfigurationSeeder extends Seeder
                 'is_editable' => true,
             ],
             [
-                'id' => 'K2-CFG-01HQ000000000000008',
                 'key' => 'company_phone',
                 'value' => '',
                 'type' => 'string',
@@ -86,7 +78,6 @@ class SystemConfigurationSeeder extends Seeder
             ],
             // Notification
             [
-                'id' => 'K2-CFG-01HQ000000000000009',
                 'key' => 'whatsapp_api_url',
                 'value' => '',
                 'type' => 'string',
@@ -95,7 +86,6 @@ class SystemConfigurationSeeder extends Seeder
                 'is_editable' => true,
             ],
             [
-                'id' => 'K2-CFG-01HQ000000000000010',
                 'key' => 'email_from_address',
                 'value' => '',
                 'type' => 'string',
@@ -104,7 +94,6 @@ class SystemConfigurationSeeder extends Seeder
                 'is_editable' => true,
             ],
             [
-                'id' => 'K2-CFG-01HQ000000000000011',
                 'key' => 'email_from_name',
                 'value' => 'K2-Net',
                 'type' => 'string',
@@ -113,7 +102,6 @@ class SystemConfigurationSeeder extends Seeder
                 'is_editable' => true,
             ],
             [
-                'id' => 'K2-CFG-01HQ000000000000012',
                 'key' => 'bank_account_info',
                 'value' => json_encode([
                     ['bank' => 'Bank BCA', 'account_number' => '1234567890', 'account_name' => 'K2-Net'],
@@ -127,7 +115,7 @@ class SystemConfigurationSeeder extends Seeder
 
         foreach ($configs as $config) {
             SystemConfiguration::updateOrCreate(
-                ['id' => $config['id']],
+                ['key' => $config['key']],
                 $config
             );
         }

@@ -14,7 +14,6 @@ class AdminUserSeeder extends Seeder
         User::updateOrCreate(
             ['email' => 'admin@k2net.local'],
             [
-                'id' => 'K2-USR-01HQ000000000000000',
                 'name' => 'Kang Dedi',
                 'email' => 'admin@k2net.local',
                 'password' => Hash::make('admin123'),

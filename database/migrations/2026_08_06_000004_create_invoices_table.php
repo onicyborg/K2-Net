@@ -9,9 +9,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('invoices', function (Blueprint $table) {
-            $table->string('id', 50)->primary();
+            $table->uuid('id')->primary();
             $table->string('invoice_number', 100)->unique();
-            $table->string('customer_id', 50);
+            $table->uuid('customer_id');
             $table->date('billing_period');
             $table->decimal('amount', 12, 0);
             $table->date('due_date');

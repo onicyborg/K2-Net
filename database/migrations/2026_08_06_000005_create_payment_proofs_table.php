@@ -9,9 +9,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('payment_proofs', function (Blueprint $table) {
-            $table->string('id', 50)->primary();
-            $table->string('invoice_id', 50)->unique();
-            $table->string('customer_id', 50);
+            $table->uuid('id')->primary();
+            $table->uuid('invoice_id')->unique();
+            $table->uuid('customer_id');
             $table->string('file_name', 255);
             $table->string('file_path', 500);
             $table->integer('file_size')->nullable();

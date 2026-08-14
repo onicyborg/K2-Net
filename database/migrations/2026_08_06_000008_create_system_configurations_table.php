@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('system_configurations', function (Blueprint $table) {
-            $table->string('id', 50)->primary();
+            $table->uuid('id')->primary();
             $table->string('key', 100)->unique();
             $table->text('value')->nullable();
             $table->enum('type', ['string', 'number', 'boolean', 'json'])->default('string');

@@ -9,9 +9,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('notification_logs', function (Blueprint $table) {
-            $table->string('id', 50)->primary();
-            $table->string('invoice_id', 50);
-            $table->string('customer_id', 50);
+            $table->uuid('id')->primary();
+            $table->uuid('invoice_id');
+            $table->uuid('customer_id');
             $table->enum('notification_type', ['reminder_h3', 'reminder_h0', 'reminder_h3_late', 'confirmation', 'rejection']);
             $table->enum('channel', ['whatsapp', 'email']);
             $table->enum('status', ['pending', 'sent', 'failed'])->default('pending');

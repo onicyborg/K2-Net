@@ -9,15 +9,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('customers', function (Blueprint $table) {
-            $table->string('id', 50)->primary();
-            $table->string('user_id', 50)->unique();
+            $table->uuid('id')->primary();
+            $table->uuid('user_id');
             $table->string('code', 50)->unique();
             $table->string('name', 255);
             $table->string('whatsapp_number', 20);
             $table->string('whatsapp_number_full', 25)->nullable();
             $table->string('email', 255)->nullable();
             $table->text('address');
-            $table->string('package_id', 50);
+            $table->uuid('package_id');
             $table->enum('status', ['aktif', 'isolir', 'nonaktif'])->default('aktif');
             $table->text('notes')->nullable();
             $table->timestamps();
