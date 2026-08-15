@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\PackageController;
+use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\VerificationController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
@@ -27,7 +28,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/invoices', [InvoiceController::class, 'index'])->name('invoices.index');
         Route::get('/invoices/{id}', [InvoiceController::class, 'index'])->name('invoices.show');
         Route::get('/verifications', [VerificationController::class, 'index'])->name('verifications.index');
-        Route::get('/reports', fn () => view('pages.reports.index'))->name('reports.index');
+        Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
         Route::get('/notifications', fn () => view('pages.notifications.index'))->name('notifications.index');
         Route::get('/configurations', fn () => view('pages.configurations.index'))->name('configurations.index');
 
@@ -52,6 +53,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/api/packages', [PackageController::class, 'store'])->name('api.packages.store');
         Route::put('/api/packages/{package}', [PackageController::class, 'update'])->name('api.packages.update');
         Route::delete('/api/packages/{package}', [PackageController::class, 'destroy'])->name('api.packages.destroy');
+        Route::get('/api/reports/{type}', [ReportController::class, 'generate'])->name('api.reports.generate');
     });
 
     Route::prefix('portal')->name('portal.')->group(function () {

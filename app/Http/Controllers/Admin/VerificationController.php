@@ -90,6 +90,10 @@ class VerificationController extends Controller
 
         $submission->formatted_amount = $submission->formattedAmount();
         $submission->billing_periods = $submission->billingPeriods();
+        $submission->actions = [
+            'approve_url' => route('admin.api.verifications.approve', ['submission' => $submission->id]),
+            'reject_url'  => route('admin.api.verifications.reject', ['submission' => $submission->id]),
+        ];
         return response()->json($submission);
     }
 

@@ -50,7 +50,7 @@ class CustomerSeeder extends Seeder
                 'whatsapp_number_full' => '6282211334455',
                 'address' => 'Jl. Diponegoro No. 88, RT 005/RW 002, Kelurahan Kalibaru, Kecamatan Cilacap Tengah, Cilacap 53212',
                 'package_name' => 'Paket Basic',
-                'status' => CustomerStatus::ISOLIR->value,
+                'status' => CustomerStatus::AKTIF->value,
                 'notes' => 'Tagihan Mei & Juni 2026 belum dibayar. Akan dinormalkan setelah pelunasan.',
             ],
             [
