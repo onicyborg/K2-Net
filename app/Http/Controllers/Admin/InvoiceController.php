@@ -7,12 +7,14 @@ use App\Http\Requests\GenerateInvoiceRequest;
 use App\Http\Requests\UpdateInvoiceRequest;
 use App\Models\Customer;
 use App\Models\Invoice;
+use App\Models\NotificationLog;
 use App\Models\Package;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 
 class InvoiceController extends Controller
 {
@@ -84,7 +86,7 @@ class InvoiceController extends Controller
 
     public function generate(GenerateInvoiceRequest $request): JsonResponse
     {
-        $customer = Customer::with('package')->findOrFail($request->customer_id);
+        $customer = Customer::with('package', 'user')->findOrFail($request->customer_id);
 
         $startDate = Carbon::parse($request->billing_period_start);
         $endDate   = Carbon::parse($request->billing_period_end);
@@ -96,7 +98,7 @@ class InvoiceController extends Controller
         try {
             while ($months->lte($endDate)) {
                 $period      = $months->copy()->startOfMonth();
-                $dueDate     = $period->copy()->addDays(14);
+                $dueDate     = $period->copy()->day(15)->startOfDay();
 
                 $existing = Invoice::where('customer_id', $customer->id)
                     ->where('billing_period', $period->toDateString())
@@ -128,9 +130,20 @@ class InvoiceController extends Controller
             return response()->json(['message' => 'Gagal membuat tagihan: ' . $e->getMessage()], 500);
         }
 
+        $emailResult = $this->sendBatchNotification($createdInvoices, $customer);
+
         $count = count($createdInvoices);
+
+        if (($emailResult['status'] ?? null) === 'failed') {
+            return response()->json([
+                'message'  => "$count tagihan berhasil dibuat. ⚠️ Email gagal dikirim.",
+                'invoices' => $createdInvoices,
+                'email_failure' => $emailResult,
+            ], 201);
+        }
+
         return response()->json([
-            'message'  => "$count tagihan berhasil dibuat untuk {$customer->name}.",
+            'message'  => "$count tagihan berhasil dibuat dan email terkirim.",
             'invoices' => $createdInvoices,
         ], 201);
     }
@@ -165,5 +178,123 @@ class InvoiceController extends Controller
             ->whereMonth('billing_period', $month)
             ->count() + 1;
         return sprintf('%s/%s/%s/%04d', $prefix, $month, $year, $count);
+    }
+
+    private function sendBatchNotification(array $invoices, Customer $customer): array
+    {
+        $user = $customer->user;
+        $portalUrl = $customer->getPortalUrl();
+
+        // Log notification for each invoice
+        foreach ($invoices as $invoice) {
+            foreach (['whatsapp', 'email'] as $channel) {
+                $recipient = $channel === 'whatsapp'
+                    ? ($customer->whatsapp_number_full ?? $customer->whatsapp_number)
+                    : $user?->email;
+
+                if (!$recipient) {
+                    continue;
+                }
+
+                NotificationLog::create([
+                    'invoice_id'         => $invoice->id,
+                    'customer_id'        => $customer->id,
+                    'notification_type'  => 'reminder_h3',
+                    'channel'           => $channel,
+                    'status'            => 'sent',
+                    'sent_at'           => now(),
+                    'meta'              => [
+                        $channel === 'whatsapp' ? 'whatsapp_number' : 'email' => $recipient,
+                        'invoice_number'  => $invoice->invoice_number,
+                        'amount'         => $invoice->formattedAmount(),
+                        'billing_period' => $invoice->billing_period->format('F Y'),
+                        'due_date'       => $invoice->due_date->format('d M Y'),
+                        'portal_url'     => $portalUrl,
+                        'batch_count'    => count($invoices),
+                    ],
+                ]);
+            }
+        }
+
+        if (!$user?->email) {
+            return ['status' => 'skipped', 'reason' => 'no_email'];
+        }
+
+        // Build invoice rows for email
+        $totalAmount = 0;
+        $invoiceRows = '';
+        foreach ($invoices as $invoice) {
+            $totalAmount += $invoice->amount;
+            $invoiceRows .= '<tr>' .
+                '<td style="padding:8px;border:1px solid #ddd;">' . $invoice->invoice_number . '</td>' .
+                '<td style="padding:8px;border:1px solid #ddd;">' . $invoice->billing_period->format('F Y') . '</td>' .
+                '<td style="padding:8px;border:1px solid #ddd;text-align:right;">Rp ' . number_format($invoice->amount, 0, ',', '.') . '</td>' .
+                '<td style="padding:8px;border:1px solid #ddd;">' . $invoice->due_date->format('d M Y') . '</td>' .
+                '</tr>';
+        }
+
+        $generatedMonth = now()->format('F Y');
+        $count = count($invoices);
+        $subject = $count > 1
+            ? "Tagihan {$count} Bulan — {$generatedMonth}"
+            : "Tagihan {$invoices[0]->invoice_number} — {$generatedMonth}";
+
+        try {
+            Mail::send([], [], function ($message) use ($user, $invoiceRows, $totalAmount, $portalUrl, $generatedMonth, $count, $subject) {
+                $message->to($user->email, $user->name)
+                    ->subject($subject)
+                    ->html("
+                        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+                            <div style='background: #0091ea; color: white; padding: 20px; text-align: center;'>
+                                <h2 style='margin:0;'>K2-Net</h2>
+                                <p style='margin:5px 0 0;'>Tagihan Internet</p>
+                            </div>
+                            <div style='padding: 20px; background: #f9f9f9;'>
+                                <p>Halo <strong>{$user->name}</strong>,</p>
+                                <p>Berikut {$count} tagihan Anda:</p>
+                                <table style='width: 100%; border-collapse: collapse; margin: 15px 0;'>
+                                    <thead>
+                                        <tr style='background:#e5e5e5;'>
+                                            <th style='padding:8px;border:1px solid #ddd;text-align:left;'>No. Tagihan</th>
+                                            <th style='padding:8px;border:1px solid #ddd;text-align:left;'>Periode</th>
+                                            <th style='padding:8px;border:1px solid #ddd;text-align:right;'>Jumlah</th>
+                                            <th style='padding:8px;border:1px solid #ddd;text-align:left;'>Jatuh Tempo</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {$invoiceRows}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr style='background:#dbeafe;font-weight:bold;'>
+                                            <td colspan='2' style='padding:8px;border:1px solid #ddd;'>TOTAL</td>
+                                            <td style='padding:8px;border:1px solid #ddd;text-align:right;'>Rp " . number_format($totalAmount, 0, ',', '.') . "</td>
+                                            <td style='padding:8px;border:1px solid #ddd;'></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                                <p style='text-align: center; margin: 20px 0;'>
+                                    <a href='{$portalUrl}' style='background: #0091ea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;'>Bayar Sekarang</a>
+                                </p>
+                                <p style='color: #666; font-size: 12px; text-align: center;'>
+                                    Atau salin tautan berikut ke browser:<br/>
+                                    <a href='{$portalUrl}' style='color: #0091ea;'>{$portalUrl}</a>
+                                </p>
+                            </div>
+                            <div style='padding: 15px; text-align: center; color: #999; font-size: 12px; border-top: 1px solid #eee;'>
+                                K2-Net — Sistem Manajemen Tagihan & Pelanggan
+                            </div>
+                        </div>
+                    ");
+            });
+            return ['status' => 'success', 'email' => $user->email, 'count' => $count];
+        } catch (\Throwable $e) {
+            Log::error('[InvoiceNotification] Gagal kirim email batch tagihan', [
+                'customer_id'     => $customer->id,
+                'recipient_email'  => $user->email,
+                'invoice_count'   => $count,
+                'error'           => $e->getMessage(),
+            ]);
+            return ['status' => 'failed', 'email' => $user->email, 'error' => $e->getMessage()];
+        }
     }
 }

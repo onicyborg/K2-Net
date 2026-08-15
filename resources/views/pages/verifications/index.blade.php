@@ -15,11 +15,11 @@
 
 @section('content')
 
-<div class="alert alert-warning d-flex align-items-center p-3 mb-5">
-    <i class="ki-duotone ki-information-4 fs-2 me-3 text-warning"><span class="path1"></span><span class="path2"></span></i>
+<div class="alert alert-info d-flex align-items-center p-3 mb-5">
+    <i class="ki-duotone ki-information-4 fs-2 me-3 text-info"><span class="path1"></span><span class="path2"></span></i>
     <div>
-        <strong>Halaman ini menampilkan</strong> tagihan dengan status <span class="badge badge-light-warning">Menunggu Verifikasi</span>.
-        Upload bukti pembayaran dilakukan oleh pelanggan melalui Portal Pelanggan.
+        Setiap submission berisi <strong>1 atau beberapa tagihan</strong> yang dibayar sekaligus oleh pelanggan.
+        Verifikasi approve/reject berlaku untuk <strong>seluruh submission</strong>.
     </div>
 </div>
 
@@ -30,7 +30,7 @@
                 <i class="ki-duotone ki-magnifier fs-1 position-absolute text-muted" style="z-index:1; left: 12px; top: 50%; transform: translateY(-50%); pointer-events: none;"></i>
                 <input type="text" data-kt-verifications-table-filter="search"
                        class="form-control form-control-solid w-250px ps-12"
-                       placeholder="Cari..." />
+                       placeholder="Cari pelanggan..." />
             </div>
         </div>
     </div>
@@ -39,12 +39,12 @@
             <thead>
                 <tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
                     <th class="w-10px">#</th>
-                    <th class="min-w-120px">No. Tagihan</th>
                     <th class="min-w-150px">Pelanggan</th>
-                    <th class="min-w-100px">Periode</th>
-                    <th class="min-w-100px">Jumlah</th>
-                    <th class="min-w-150px">Bukti Bayar</th>
-                    <th class="min-w-120px">Tanggal Upload</th>
+                    <th class="min-w-120px">Periode Tagihan</th>
+                    <th class="min-w-80px text-center">Jumlah</th>
+                    <th class="min-w-120px">Transfer ke</th>
+                    <th class="min-w-120px">Tanggal Transfer</th>
+                    <th class="min-w-100px">Tanggal Submit</th>
                     <th class="text-end min-w-100px">Aksi</th>
                 </tr>
             </thead>
@@ -60,72 +60,82 @@
 
 {{-- View Detail Modal --}}
 <div class="modal fade" tabindex="-1" id="kt_modal_view_verification">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title">Detail Verifikasi</h3>
+                <h3 class="modal-title">Detail Submission</h3>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label class="form-label text-muted fs-8 text-uppercase fw-semibold">No. Tagihan</label>
-                            <div class="fw-bold text-gray-900" id="view_ver_inv_number">—</div>
+                {{-- Submission Info --}}
+                <div class="row g-4 mb-4">
+                    <div class="col-md-4">
+                        <div class="bg-light-primary rounded-3 p-3">
+                            <div class="text-muted small text-uppercase fw-semibold mb-1">Pelanggan</div>
+                            <div class="fw-bold text-gray-900" id="view_customer_name">—</div>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label class="form-label text-muted fs-8 text-uppercase fw-semibold">Pelanggan</label>
-                            <div class="fw-bold text-gray-900" id="view_ver_customer">—</div>
+                    <div class="col-md-4">
+                        <div class="bg-light-primary rounded-3 p-3">
+                            <div class="text-muted small text-uppercase fw-semibold mb-1">Transfer dari</div>
+                            <div class="fw-bold text-gray-900" id="view_transfer_from">—</div>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label class="form-label text-muted fs-8 text-uppercase fw-semibold">Paket</label>
-                            <div class="fw-bold text-gray-900" id="view_ver_package">—</div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label class="form-label text-muted fs-8 text-uppercase fw-semibold">Periode</label>
-                            <div class="fw-bold text-gray-900" id="view_ver_period">—</div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label class="form-label text-muted fs-8 text-uppercase fw-semibold">Jumlah Tagihan</label>
-                            <div class="fw-bold text-gray-900 fs-5" id="view_ver_amount">—</div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label class="form-label text-muted fs-8 text-uppercase fw-semibold">Jatuh Tempo</label>
-                            <div class="fw-bold text-gray-900" id="view_ver_due_date">—</div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label class="form-label text-muted fs-8 text-uppercase fw-semibold">Tanggal Upload Bukti</label>
-                            <div class="fw-bold text-gray-900" id="view_ver_uploaded_at">—</div>
-                        </div>
-                    </div>
-                    <div class="col-12">
-                        <div class="mb-3">
-                            <label class="form-label text-muted fs-8 text-uppercase fw-semibold">Bukti Pembayaran</label>
-                            <div id="view_ver_proof_container">—</div>
+                    <div class="col-md-4">
+                        <div class="bg-light-success rounded-3 p-3">
+                            <div class="text-muted small text-uppercase fw-semibold mb-1">Jumlah Transfer</div>
+                            <div class="fw-bold text-gray-900 fs-5" id="view_transfer_amount">—</div>
                         </div>
                     </div>
                 </div>
+
+                <div class="row g-4 mb-4">
+                    <div class="col-md-6">
+                        <div class="bg-light-primary rounded-3 p-3">
+                            <div class="text-muted small text-uppercase fw-semibold mb-1">Transfer ke</div>
+                            <div class="fw-bold text-gray-900" id="view_transfer_to">—</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="bg-light-primary rounded-3 p-3">
+                            <div class="text-muted small text-uppercase fw-semibold mb-1">Tanggal Transfer</div>
+                            <div class="fw-bold text-gray-900" id="view_transfer_date">—</div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Invoice List Table --}}
+                <h5 class="text-gray-900 fw-bold mb-3">
+                    <i class="ki-duotone ki-document fs-2 me-2"><span class="path1"></span><span class="path2"></span></i>
+                    Daftar Tagihan (<span id="view_invoice_count">0</span>)
+                </h5>
+                <div class="table-responsive mb-4">
+                    <table class="table table-sm table-row-dashed table-hover align-middle">
+                        <thead class="table-light">
+                            <tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
+                                <th>No. Tagihan</th>
+                                <th>Periode</th>
+                                <th class="text-end">Jumlah</th>
+                                <th>Jatuh Tempo</th>
+                            </tr>
+                        </thead>
+                        <tbody id="view_invoices_list"></tbody>
+                    </table>
+                </div>
+
+                {{-- Payment Proof --}}
+                <h5 class="text-gray-900 fw-bold mb-3">
+                    <i class="ki-duotone ki-picture fs-2 me-2"><span class="path1"></span><span class="path2"></span></i>
+                    Bukti Pembayaran
+                </h5>
+                <div id="view_proof_container" class="mb-3"></div>
             </div>
             <div class="modal-footer d-flex justify-content-end gap-2">
                 <button type="button" class="btn btn-light" data-bs-dismiss="modal">Tutup</button>
-                <button type="button" class="btn btn-danger" id="btn_reject_verification">
-                    <i class="ki-duotone ki-close fs-2 me-1"><span class="path1"></span><span class="path2"></span></i>
+                <button type="button" class="btn btn-danger text-white" id="btn_reject_verification">
                     Tolak
                 </button>
                 <button type="button" class="btn btn-success" id="btn_approve_verification">
-                    <i class="ki-duotone ki-check fs-2 me-1"><span class="path1"></span><span class="path2"></span></i>
                     Setujui
                 </button>
             </div>
@@ -145,7 +155,7 @@
                 <div class="modal-body">
                     <div class="alert alert-warning d-flex align-items-center p-3 mb-3">
                         <i class="ki-duotone ki-information-4 fs-2 me-2"><span class="path1"></span><span class="path2"></span></i>
-                        <small>Tagihan akan dikembalikan ke status <strong>Belum Bayar</strong>.</small>
+                        <small>Semua tagihan dalam submission ini akan dikembalikan ke status <strong>Belum Bayar</strong>.</small>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold">Alasan Penolakan <span class="text-danger">*</span></label>
@@ -174,49 +184,56 @@
 (function () {
     "use strict";
 
-    var currentInvoiceId = null;
+    var currentSubmissionId = null;
     var currentApproveUrl = null;
     var currentRejectUrl = null;
 
-    var renderRowNumber = function (data, type, row, meta) {
-        return '<span class="text-muted">' + (meta.row + meta.settings._iDisplayStart + 1) + '</span>';
+    var formatDate = function (dateStr) {
+        if (!dateStr) return '—';
+        var d = new Date(dateStr);
+        return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
     };
 
-    var renderInvoiceNumber = function (num) {
-        return '<span class="fw-bold text-primary">' + (num || '—') + '</span>';
+    var formatRupiah = function (num) {
+        return 'Rp' + Number(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    };
+
+    var renderRowNumber = function (data, type, row, meta) {
+        return '<span class="text-muted">' + (meta.row + meta.settings._iDisplayStart + 1) + '</span>';
     };
 
     var renderCustomer = function (name) {
         return name ? '<span class="fw-bold text-gray-900">' + name + '</span>' : '<span class="text-muted">—</span>';
     };
 
-    var renderPeriod = function (period) {
-        return '<span class="text-gray-600">' + (period || '—') + '</span>';
+    var renderPeriods = function (periods) {
+        return '<span class="text-gray-600">' + (periods || '—') + '</span>';
     };
 
-    var renderAmount = function (amount) {
-        return '<span class="fw-bold text-gray-900">' + amount + '</span>';
+    var renderAmount = function (amount, formatted) {
+        return '<span class="fw-bold text-gray-900">' + (formatted || formatRupiah(amount)) + '</span>';
     };
 
-    var renderProof = function (proof) {
-        if (!proof) return '<span class="text-muted">—</span>';
-        return '<span class="badge badge-light-primary">' + proof.file_name + '</span>';
+    var renderBank = function (row) {
+        var bank = row.bank || '';
+        var num = row.account_number || '';
+        var name = row.account_name || '';
+        if (!bank && !num) return '<span class="text-muted">—</span>';
+        return '<span class="text-gray-700">' + bank + ' — ' + num + '<br><small class="text-muted">a.n ' + name + '</small></span>';
     };
 
-    var renderUploadedAt = function (dt) {
+    var renderSubmittedAt = function (dt) {
         return '<span class="text-gray-600">' + (dt || '—') + '</span>';
     };
 
     var renderActions = function (row) {
         if (!row || !row.actions) return '';
         var showUrl = row.actions.show_url || '';
-        var html = '';
-        html += '<button type="button" class="btn btn-sm btn-light-primary me-1"';
-        html += '        data-bs-toggle="tooltip" data-bs-placement="top" title="Lihat & Verifikasi"';
-        html += '        onclick="openVerificationModal(\'' + showUrl.replace(/'/g, "\\'") + '\')">';
-        html += '    <i class="ki-duotone ki-eye fs-2 me-1"><span class="path1"></span><span class="path2"></span></i>';
-        html += '    Verifikasi';
-        html += '</button>';
+        var html = '<button type="button" class="btn btn-sm btn-light-primary me-1"';
+        html += ' data-bs-toggle="tooltip" data-bs-placement="top" title="Lihat & Verifikasi"';
+        html += ' onclick="openVerificationModal(\'' + showUrl.replace(/'/g, "\\'") + '\')">';
+        html += '<i class="ki-duotone ki-eye fs-2 me-1"><span class="path1"></span><span class="path2"></span></i>';
+        html += 'Verifikasi</button>';
         return html;
     };
 
@@ -258,27 +275,31 @@
                 data: function (d) {}
             },
             columns: [
-                { data: null,            name: null,            orderable: false, searchable: false },
-                { data: 'invoice_number', name: 'invoice_number', orderable: true,  searchable: false },
-                { data: 'customer_name',  name: 'customer_name',  orderable: true,  searchable: false },
-                { data: 'billing_period', name: 'billing_period', orderable: true,  searchable: false },
-                { data: 'formatted_amount', name: 'amount',      orderable: true,  searchable: false },
-                { data: 'payment_proof',  name: 'payment_proof',  orderable: false, searchable: false },
-                { data: 'submitted_at',   name: 'submitted_at',   orderable: true,  searchable: false },
-                { data: null,             name: null,             orderable: false, searchable: false, className: 'text-end' }
+                { data: null,             name: null,             orderable: false, searchable: false },
+                { data: 'customer_name',  name: 'customer_name', orderable: true,  searchable: true },
+                { data: 'billing_periods', name: null,         orderable: false, searchable: false },
+                { data: 'formatted_amount', name: 'transfer_amount', orderable: true, searchable: false, className: 'text-center' },
+                { data: 'bank',           name: null,           orderable: false, searchable: false },
+                { data: 'account_number', name: null,         orderable: false, searchable: false },
+                { data: 'account_name',   name: null,        orderable: false, searchable: false },
+                { data: 'transfer_date',  name: 'transfer_date', orderable: true,  searchable: false },
+                { data: 'submitted_at',    name: 'submitted_at',  orderable: true,  searchable: false },
+                { data: null,             name: null,           orderable: false, searchable: false, className: 'text-end' }
             ],
             columnDefs: [
                 { targets: 0, render: renderRowNumber },
-                { targets: 1, render: function (d) { return renderInvoiceNumber(d); } },
-                { targets: 2, render: function (d) { return renderCustomer(d); } },
-                { targets: 3, render: function (d) { return renderPeriod(d); } },
-                { buttons: 4, render: function (d) { return renderAmount(d); } },
-                { targets: 5, render: function (d) { return renderProof(d); } },
-                { targets: 6, render: function (d) { return renderUploadedAt(d); } },
-                { targets: 7, render: function (d, t, row) { return renderActions(row); } }
+                { targets: 1, render: function (d) { return renderCustomer(d); } },
+                { targets: 2, render: function (d) { return renderPeriods(d); } },
+                { targets: 3, render: function (d, t, row) { return renderAmount(d, row.formatted_amount); } },
+                { targets: 4, render: function (d, type, row) { return renderBank(row); } },
+                { targets: 5, data: 'account_number', visible: false },
+                { targets: 6, data: 'account_name', visible: false },
+                { targets: 7, render: function (d) { return '<span class="text-gray-600">' + formatDate(d) + '</span>'; } },
+                { targets: 8, render: function (d) { return renderSubmittedAt(d); } },
+                { targets: 9, render: function (d, t, row) { return renderActions(row); } }
             ],
             drawCallback: drawCallback,
-            order: [[6, 'desc']],
+            order: [[8, 'desc']],
             searchDelay: 400,
             pagingType: 'simple_numbers',
             pageLength: 10,
@@ -287,7 +308,7 @@
             language: {
                 processing: '<span class="spinner-border spinner-border-sm align-middle text-primary me-2"></span> Memuat...',
                 lengthMenu: 'Tampilkan _MENU_',
-                zeroRecords: 'Tidak ada pembayaran yang menunggu verifikasi',
+                zeroRecords: 'Tidak ada submission yang menunggu verifikasi',
                 info: 'Menampilkan _START_–_END_ dari _TOTAL_',
                 infoEmpty: 'Menampilkan 0 dari 0',
                 infoFiltered: '(disaring dari _MAX_ total)',
@@ -314,23 +335,68 @@
         })
         .then(function (res) { return res.json(); })
         .then(function (data) {
-            currentInvoiceId   = data.id;
-            currentApproveUrl  = apiUrl.replace('/show', '/approve');
-            currentRejectUrl   = apiUrl.replace('/show', '/reject');
+            currentSubmissionId = data.id;
+            currentApproveUrl  = data.actions?.approve_url || apiUrl.replace('/show', '/approve');
+            currentRejectUrl   = data.actions?.reject_url  || apiUrl.replace('/show', '/reject');
 
-            document.getElementById('view_ver_inv_number').textContent = data.invoice_number || '—';
-            document.getElementById('view_ver_customer').textContent = data.customer?.name || '—';
-            document.getElementById('view_ver_package').textContent = data.customer?.package?.name || '—';
-            document.getElementById('view_ver_period').textContent = data.billing_period ? new Date(data.billing_period + '-01').toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }) : '—';
-            document.getElementById('view_ver_amount').textContent = data.formatted_amount || '—';
-            document.getElementById('view_ver_due_date').textContent = data.due_date ? new Date(data.due_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '—';
-            document.getElementById('view_ver_uploaded_at').textContent = data.payment_proof?.uploaded_at ? new Date(data.payment_proof.uploaded_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+            document.getElementById('view_customer_name').textContent  = data.customer?.name || '—';
+            document.getElementById('view_transfer_from').textContent = data.transfer_from || '—';
+            document.getElementById('view_transfer_amount').textContent = data.formatted_amount || '—';
+            document.getElementById('view_transfer_to').textContent   = (data.bank || '—') + ' — ' + (data.account_number || '') + ' a.n ' + (data.account_name || '');
+            document.getElementById('view_transfer_date').textContent = formatDate(data.transfer_date);
 
-            var proofContainer = document.getElementById('view_ver_proof_container');
+            // Invoice list
+            var invoices = data.invoices || [];
+            document.getElementById('view_invoice_count').textContent = invoices.length;
+            var listBody = document.getElementById('view_invoices_list');
+            listBody.innerHTML = '';
+            if (invoices.length === 0) {
+                listBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">Tidak ada data tagihan.</td></tr>';
+            } else {
+                invoices.forEach(function (inv) {
+                    var bp = inv.billing_period || '';
+                    var period = new Date(bp).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+                    var tr = document.createElement('tr');
+                    tr.innerHTML =
+                        '<td><span class="text-primary fw-bold">' + (inv.invoice_number || '—') + '</span></td>' +
+                        '<td><span class="text-gray-700">' + period + '</span></td>' +
+                        '<td class="text-end"><span class="fw-bold text-gray-900">' + formatRupiah(inv.amount) + '</span></td>' +
+                        '<td><span class="text-gray-600">' + formatDate(inv.due_date) + '</span></td>';
+                    listBody.appendChild(tr);
+                });
+                // Total row
+                var totalTr = document.createElement('tr');
+                totalTr.className = 'table-secondary fw-bold';
+                totalTr.innerHTML =
+                    '<td colspan="2">Total</td>' +
+                    '<td class="text-end"><span class="text-gray-900">' + data.formatted_amount + '</span></td>' +
+                    '<td></td>';
+                listBody.appendChild(totalTr);
+            }
+
+            // Payment proof
+            var proofContainer = document.getElementById('view_proof_container');
             if (data.payment_proof) {
-                proofContainer.innerHTML = '<div class="d-flex align-items-center gap-3">' +
-                    '<span class="badge badge-light-primary fs-6"><i class="ki-duotone ki-picture fs-2 me-1"><span></span></i> ' + data.payment_proof.file_name + '</span>' +
-                    '</div>';
+                var proof = data.payment_proof;
+                var proofUrl = proof.file_url || ('/storage/' + proof.file_path);
+                if (['jpg', 'jpeg', 'png'].includes(proof.file_type?.toLowerCase())) {
+                    proofContainer.innerHTML =
+                        '<div class="d-flex flex-column align-items-center gap-3">' +
+                        '<div class="border rounded-3 overflow-hidden" style="max-width: 400px;">' +
+                        '<img src="' + proofUrl + '" alt="Bukti Transfer" class="img-fluid d-block mx-auto" style="max-height: 300px;" />' +
+                        '<div class="p-2 text-muted small text-center">' + proof.file_name + '</div>' +
+                        '</div>' +
+                        '<a href="' + proofUrl + '" target="_blank" class="btn btn-sm btn-primary"><i class="ki-duotone ki-external fs-2 me-1"><span></span></i>Buka di Tab Baru</a>' +
+                        '</div>';
+                } else {
+                    proofContainer.innerHTML =
+                        '<div class="d-flex align-items-center gap-3 p-3 border rounded-3">' +
+                        '<i class="ki-duotone ki-deliver fs-2x text-primary"><span></span></i>' +
+                        '<div><div class="fw-bold text-gray-900">' + proof.file_name + '</div>' +
+                        '<small class="text-muted">PDF — klik untuk download</small></div>' +
+                        '<a href="' + proofUrl + '" target="_blank" class="btn btn-sm btn-primary ms-auto">Download</a>' +
+                        '</div>';
+                }
             } else {
                 proofContainer.innerHTML = '<span class="text-muted">Tidak ada bukti pembayaran.</span>';
             }
@@ -377,7 +443,7 @@
         document.getElementById('btn_approve_verification').addEventListener('click', function () {
             if (!currentApproveUrl) return;
             Swal.fire({
-                text: "Setujui pembayaran ini? Tagihan akan ditandai lunas.",
+                text: "Setujui submission ini? Semua tagihan di dalamnya akan ditandai lunas.",
                 icon: "success",
                 buttonsStyling: false,
                 showCancelButton: true,
@@ -386,11 +452,11 @@
                 customClass: { confirmButton: "btn btn-success", cancelButton: "btn btn-light" }
             }).then(function (result) {
                 if (!result.isConfirmed) return;
-                handleVerificationAction(currentApproveUrl, 'POST', {}, "Pembayaran berhasil disetujui.");
+                handleVerificationAction(currentApproveUrl, 'POST', {}, "Submission berhasil disetujui. Semua tagihan ditandai lunas.");
             });
         });
 
-        // Reject button — open reject modal
+        // Reject button
         document.getElementById('btn_reject_verification').addEventListener('click', function () {
             var viewModal = bootstrap.Modal.getInstance(document.getElementById('kt_modal_view_verification'));
             if (viewModal) viewModal.hide();
@@ -430,7 +496,7 @@
                     var modal = bootstrap.Modal.getInstance(document.getElementById('kt_modal_reject_verification'));
                     if (modal) modal.hide();
                     if (window.verificationsTable) window.verificationsTable.ajax.reload();
-                    Swal.fire({ text: "Pembayaran berhasil ditolak.", icon: "success", buttonsStyling: false, confirmButtonText: "Ok", customClass: { confirmButton: "btn btn-primary" } });
+                    Swal.fire({ text: "Submission berhasil ditolak.", icon: "success", buttonsStyling: false, confirmButtonText: "Ok", customClass: { confirmButton: "btn btn-primary" } });
                 } else {
                     res.json().then(function (data) {
                         Swal.fire({ text: data.message || data.errors?.rejection_reason?.[0] || "Terjadi kesalahan.", icon: "error", buttonsStyling: false, confirmButtonText: "Ok", customClass: { confirmButton: "btn btn-danger" } });

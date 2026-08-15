@@ -2,6 +2,33 @@
 
 @section('title', 'Portal Pembayaran — K2-Net')
 
+@push('extra_styles')
+<style>
+    .form-check-input:checked {
+        background-color: #0091ea;
+        border-color: #0091ea;
+    }
+    .form-check-input:focus {
+        border-color: #0091ea;
+        box-shadow: 0 0 0 0.2rem rgba(0, 145, 234, 0.25);
+    }
+    .form-check-input {
+        border-width: 2px;
+        cursor: pointer;
+        width: 18px;
+        height: 18px;
+        margin-top: 0;
+    }
+    .form-check {
+        display: flex;
+        align-items: center;
+    }
+    .invoice-row:hover {
+        background-color: #f8f9fa;
+    }
+</style>
+@endpush
+
 @section('content')
 
 {{-- SUCCESS MESSAGE --}}
@@ -131,7 +158,7 @@
                 <div class="col-md-6">
                     <label class="form-label fw-bold">Jumlah Transfer (Rp) <span class="text-danger">*</span></label>
                     <input type="number" name="transfer_amount" id="transfer_amount"
-                           class="form-control" required min="1000" placeholder="Masukkan jumlah transfer" />
+                           class="form-control" required min="1000" placeholder="Masukkan jumlah transfer" readonly />
                 </div>
                 <div class="col-md-6">
                     <label class="form-label fw-bold">Transfer dari (Atas Nama) <span class="text-danger">*</span></label>
@@ -189,27 +216,37 @@
 
     // Select all
     document.getElementById('select_all').addEventListener('change', function () {
+        var isChecked = this.checked;
         var checkboxes = document.querySelectorAll('.invoice-checkbox');
+        totalAmount = 0;
         checkboxes.forEach(function (cb) {
-            cb.checked = this.checked;
+            cb.checked = isChecked;
+            var row = cb.closest('.invoice-row');
+            var amount = parseInt(row.dataset.amount, 10) || 0;
             var id = cb.value;
-            if (this.checked) {
+            if (isChecked) {
                 selectedInvoices.add(id);
+                totalAmount += amount;
             } else {
                 selectedInvoices.delete(id);
             }
         });
+        this.indeterminate = false;
         updateTotal();
     });
 
     // Individual checkbox
     document.querySelectorAll('.invoice-checkbox').forEach(function (cb) {
         cb.addEventListener('change', function () {
+            var row = this.closest('.invoice-row');
+            var amount = parseInt(row.dataset.amount, 10) || 0;
             var id = this.value;
             if (this.checked) {
                 selectedInvoices.add(id);
+                totalAmount += amount;
             } else {
                 selectedInvoices.delete(id);
+                totalAmount -= amount;
             }
 
             // Update select all
@@ -219,19 +256,6 @@
             document.getElementById('select_all').checked = allChecked;
             document.getElementById('select_all').indeterminate = someChecked && !allChecked;
 
-            updateTotal();
-        });
-    });
-
-    // Calculate total from selected
-    document.querySelectorAll('.invoice-row').forEach(function (row) {
-        row.querySelector('.invoice-checkbox').addEventListener('change', function () {
-            var amount = parseInt(row.dataset.amount, 10) || 0;
-            if (this.checked) {
-                totalAmount += amount;
-            } else {
-                totalAmount -= amount;
-            }
             updateTotal();
         });
     });
