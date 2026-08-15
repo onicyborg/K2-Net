@@ -44,9 +44,9 @@ Route::middleware('auth')->group(function () {
         Route::put('/api/invoices/{invoice}', [InvoiceController::class, 'update'])->name('api.invoices.update');
         Route::delete('/api/invoices/{invoice}', [InvoiceController::class, 'destroy'])->name('api.invoices.destroy');
         Route::get('/api/verifications/datatable', [VerificationController::class, 'datatable'])->name('api.verifications.datatable');
-        Route::get('/api/verifications/{invoice}', [VerificationController::class, 'show'])->name('api.verifications.show');
-        Route::post('/api/verifications/{invoice}/approve', [VerificationController::class, 'approve'])->name('api.verifications.approve');
-        Route::post('/api/verifications/{invoice}/reject', [VerificationController::class, 'reject'])->name('api.verifications.reject');
+        Route::get('/api/verifications/{submission}', [VerificationController::class, 'show'])->name('api.verifications.show');
+        Route::post('/api/verifications/{submission}/approve', [VerificationController::class, 'approve'])->name('api.verifications.approve');
+        Route::post('/api/verifications/{submission}/reject', [VerificationController::class, 'reject'])->name('api.verifications.reject');
         Route::get('/api/packages/datatable', [PackageController::class, 'datatable'])->name('api.packages.datatable');
         Route::get('/api/packages/{package}', [PackageController::class, 'show'])->name('api.packages.show');
         Route::post('/api/packages', [PackageController::class, 'store'])->name('api.packages.store');
