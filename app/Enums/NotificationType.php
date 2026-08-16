@@ -4,20 +4,18 @@ namespace App\Enums;
 
 enum NotificationType: string
 {
-    case REMINDER_H3 = 'reminder_h3';
-    case REMINDER_H0 = 'reminder_h0';
-    case REMINDER_H3_LATE = 'reminder_h3_late';
+    case REMINDER_BEFORE = 'reminder_before';
+    case REMINDER_OVERDUE = 'reminder_overdue';
     case CONFIRMATION = 'confirmation';
     case REJECTION = 'rejection';
 
     public function label(): string
     {
         return match ($this) {
-            self::REMINDER_H3 => 'Pengingat H-3',
-            self::REMINDER_H0 => 'Pengingat Jatuh Tempo',
-            self::REMINDER_H3_LATE => 'Pengingat Terlambat',
-            self::CONFIRMATION => 'Konfirmasi Pembayaran',
-            self::REJECTION => 'Penolakan Pembayaran',
+            self::REMINDER_BEFORE  => 'Pengingat Sebelum Jatuh Tempo',
+            self::REMINDER_OVERDUE => 'Pengingat Lewat Jatuh Tempo',
+            self::CONFIRMATION     => 'Konfirmasi Pembayaran',
+            self::REJECTION        => 'Penolakan Pembayaran',
         };
     }
 }

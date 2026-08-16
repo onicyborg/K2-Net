@@ -78,11 +78,11 @@
 
     var renderType = function (row) {
         var typeColors = {
-            'reminder_h3': 'primary',
-            'reminder_h0': 'warning',
-            'reminder_h3_late': 'danger',
-            'confirmation': 'success',
-            'rejection': 'dark'
+            'reminder_h3':      'primary',
+            'reminder_before':   'warning',
+            'reminder_overdue':  'danger',
+            'confirmation':      'success',
+            'rejection':         'dark'
         };
         var color = typeColors[row.type] || 'secondary';
         return '<span class="badge badge-' + color + '">' + (row.type_label || row.type) + '</span>';
