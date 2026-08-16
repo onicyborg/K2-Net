@@ -8,11 +8,24 @@ use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\SystemConfigurationController;
 use App\Http\Controllers\Admin\VerificationController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CronController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PortalController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => redirect()->route('login'));
+
+// =============================================================
+// CRON ENDPOINTS (external cron via cron-job.org)
+// =============================================================
+// Tidak butuh login. Dilindungi token (?token=...) yang di-set
+// di .env sebagai CRON_TOKEN. Lihat SETUP.md untuk konfigurasi.
+Route::prefix('cron')->name('cron.')->group(function () {
+    Route::get('/invoices-remind',         [CronController::class, 'invoicesRemind'])->name('invoices-remind');
+    Route::get('/invoices-auto-generate',  [CronController::class, 'invoicesAutoGenerate'])->name('invoices-auto-generate');
+    Route::get('/billing-reminder-active', [CronController::class, 'billingReminderActive'])->name('billing-reminder-active');
+    Route::get('/billing-reminder-due',    [CronController::class, 'billingReminderDue'])->name('billing-reminder-due');
+});
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');

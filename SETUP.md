@@ -3,124 +3,102 @@
 ## Prerequisites
 
 ```bash
-cd /path/to/K2-Net
+php -v
+# PHP 8.2+
+composer --version
+node --version
 ```
 
-## 1. Install Dependencies
+## Install
 
 ```bash
 composer install
-```
-
-## 2. Install JWT Auth
-
-```bash
-composer require tymon/jwt-auth
-php artisan vendor:publish --provider="Tymon\JWTAuth\Providers\LaravelServiceProvider"
-php artisan jwt:secret
-```
-
-## 3. Konfigurasi Environment
-
-```bash
+npm install
 cp .env.example .env
 php artisan key:generate
-```
-
-Edit `.env`:
-```
-APP_NAME="K2-Net"
-APP_URL=http://localhost:8000
-
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=k2net
-DB_USERNAME=root
-DB_PASSWORD=
-
-# Atau untuk PostgreSQL (dev):
-# DB_CONNECTION=pgsql
-# DB_HOST=127.0.0.1
-# DB_PORT=5432
-# DB_DATABASE=k2net
-# DB_USERNAME=postgres
-# DB_PASSWORD=secret
-```
-
-## 4. Buat Database
-
-```sql
-CREATE DATABASE k2net CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
-
-## 5. Jalankan Migration & Seeder
-
-```bash
-php artisan migrate
-php artisan db:seed
-```
-
-## 6. Jalankan Server
-
-```bash
+php artisan migrate --seed
+npm run build
 php artisan serve
 ```
 
-Buka browser: http://localhost:8000
+## Cron Job — External via cron-job.org
 
-## Login Admin
+Project ini menggunakan **cron-job.org** (layanan gratis) untuk menjalankan scheduled jobs pada waktu yang tepat, **tanpa** perlu cron job per-menit di server.
 
-- **Email:** admin@k2net.local
-- **Password:** admin123
+### Cara kerja
 
-## API Endpoint
+1. `cron-job.org` hit URL endpoint Laravel pada waktu yang dijadwalkan.
+2. Endpoint memvalidasi token, lalu panggil Artisan command yang relevan.
+3. Laravel jalankan command dan kirim email/WhatsApp seperti biasa.
 
-### Login
+### Setup satu kali
+
+**1. Generate token**
+
 ```bash
-curl -X POST http://localhost:8000/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@k2net.local","password":"admin123"}'
+openssl rand -hex 32
 ```
 
-Response:
+Copy hasilnya, masukkan ke `.env` di server:
+
+```
+CRON_TOKEN=<hasil-openssl>
+```
+
+Deploy / restart Laravel supaya `.env` terbaca.
+
+**2. Daftar di cron-job.org**
+
+Buat akun gratis di https://cron-job.org, lalu buat **4 cron job** berikut:
+
+| # | URL | Schedule | Method |
+|---|---|---|---|
+| 1 | `https://yourdomain.com/cron/invoices-remind?token=XXX` | `0 8 * * *` (daily 08:00) | GET |
+| 2 | `https://yourdomain.com/cron/invoices-auto-generate?token=XXX` | `5 8 28 * *` (tanggal 28 jam 08:05) | GET |
+| 3 | `https://yourdomain.com/cron/billing-reminder-active?token=XXX` | `0 8 1 * *` (tanggal 1 jam 08:00) | GET |
+| 4 | `https://yourdomain.com/cron/billing-reminder-due?token=XXX` | `0 8 15 * *` (tanggal 15 jam 08:00) | GET |
+
+Ganti `XXX` dengan token dari `.env`.
+
+**3. Testing manual**
+
+Buka URL di browser (atau pakai curl):
+
+```bash
+curl "https://yourdomain.com/cron/invoices-remind?token=XXX"
+```
+
+Response JSON:
 ```json
 {
-  "success": true,
-  "data": {
-    "access_token": "eyJ...",
-    "token_type": "Bearer",
-    "expires_in": 3600,
-    "user": {...}
-  }
+  "status": "ok",
+  "command": "invoices:remind",
+  "exit_code": 0,
+  "output": "...",
+  "ran_at": "2026-08-17 08:00:00"
 }
 ```
 
-### Get Me
-```bash
-curl http://localhost:8000/api/v1/auth/me \
-  -H "Authorization: Bearer eyJ..."
-```
+Token salah → `403 Forbidden`.
 
-### Refresh Token
-```bash
-curl -X POST http://localhost:8000/api/v1/auth/refresh \
-  -H "Authorization: Bearer eyJ..."
-```
+### Daftar endpoint
 
-### Logout
-```bash
-curl -X POST http://localhost:8000/api/v1/auth/logout \
-  -H "Authorization: Bearer eyJ..."
-```
+Semua endpoint ada di `routes/web.php` dengan prefix `/cron`:
 
-## Struktur Menu Admin
+| Endpoint | Command | Kapan dijalankan |
+|---|---|---|
+| `/cron/invoices-remind` | `invoices:remind` | Daily 08:00 — email reminder H-3 & H+3 |
+| `/cron/invoices-auto-generate` | `invoices:auto-generate` | Tanggal 28 jam 08:05 — generate invoice bulan depan + email |
+| `/cron/billing-reminder-active` | `billing:send-reminders --type=active` | Tanggal 1 jam 08:00 — WhatsApp ke semua customer aktif |
+| `/cron/billing-reminder-due` | `billing:send-reminders --type=due` | Tanggal 15 jam 08:00 — WhatsApp reminder jatuh tempo |
 
-1. **Dashboard** — Statistik ringkasan sistem
-2. **Pelanggan** — CRUD data pelanggan
-3. **Paket Internet** — CRUD paket langganan
-4. **Tagihan** — Kelola invoice pelanggan
-5. **Verifikasi Pembayaran** — Konfirmasi bukti bayar
-6. **Pelaporan** — Laporan pendapatan & pelanggan
-7. **Log Notifikasi** — Riwayat notifikasi WhatsApp/Email
-8. **Konfigurasi** — Pengaturan sistem
+### Tidak perlu lagi
+
+- `* * * * * cd /path && php artisan schedule:run` — hapus cron OS ini
+- `routes/console.php` Schedule:: sudah dihapus, tidak aktif
+
+### Monitoring
+
+- Login ke cron-job.org → lihat history eksekusi (success/fail, response time)
+- Cek Laravel log: `storage/logs/laravel.log` untuk error command
+- Cek `notification_logs` table untuk status kirim email/WhatsApp

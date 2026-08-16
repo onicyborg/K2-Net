@@ -123,4 +123,16 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Cron Token (external cron via cron-job.org)
+    |--------------------------------------------------------------------------
+    |
+    | Token dipakai untuk validasi endpoint /cron/*. Set value random panjang
+    | di .env sebagai CRON_TOKEN. Endpoint akan return 403 jika token salah
+    | atau kosong.
+    |
+    */
+    'cron_token' => env('CRON_TOKEN'),
+
 ];
