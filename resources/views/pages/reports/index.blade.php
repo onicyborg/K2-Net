@@ -162,7 +162,10 @@
             if (params.length) url += '?' + params.join('&');
 
             fetch(url, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
-                .then(function (res) { return res.json(); })
+                .then(function (res) {
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    return res.json();
+                })
                 .then(function (resp) {
                     var s = resp.summary || {};
                     var html = '';
@@ -183,7 +186,10 @@
                         html += this.statCard('Nonaktif', s.nonaktif_count || 0, 'ki-ghost', 'dark');
                     }
                     document.getElementById('summary_stats').innerHTML = html;
-                }.bind(this));
+                }.bind(this))
+                .catch(function (err) {
+                    console.error('Summary fetch failed:', err);
+                });
         },
 
         getDatatableUrl: function () {
@@ -292,8 +298,10 @@
                         document.getElementById('btn_export_excel').href = self.getExportUrl();
                         return json.data || [];
                     },
-                    error: function () {
-                        console.error('DataTables AJAX error');
+                    error: function (xhr, error, thrown) {
+                        console.error('DataTables AJAX error:', error, thrown);
+                        // Reset processing indicator manually so it doesn't stay stuck
+                        self.dt.processing(false);
                     }
                 },
                 columns: columns,
@@ -315,7 +323,11 @@
                     },
                     processing: '<span class="spinner-border spinner-border-sm align-middle text-primary me-2"></span> Memuat...',
                 },
-                drawCallback: function () {
+                drawCallback: function (settings) {
+                    // Reset processing flag explicitly for empty results
+                    if (settings) {
+                        self.dt.processing(false);
+                    }
                     document.getElementById('btn_export_excel').href = self.getExportUrl();
                     if (document.getElementById(prefix + '_paginate').innerHTML.trim() !== '') return;
                     var wrapper = document.querySelector('#' + tableId + '_wrapper');
@@ -334,6 +346,12 @@
                     }
                 }
             });
+
+            // Force-clear processing overlay after init. When wrapper was display:none
+            // (during type switch), DataTables processing flag can stay stuck.
+            setTimeout(function () {
+                if (self.dt) self.dt.processing(false);
+            }, 100);
         },
 
         getColumnDefs: function (type) {
