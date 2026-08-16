@@ -15,7 +15,7 @@
 
 @section('toolbar_actions')
     <a href="#" id="btn_export_excel" class="btn btn-sm btn-light-success" style="display:none;">
-        <i class="ki-duotone ki-tablet-ksd fs-2 me-1"><span></span></i>
+        <i class="ki-duotone ki-file-down fs-2 me-1"><span class="path1"></span><span class="path2"></span></i>
         Export Excel
     </a>
 @endsection
