@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Events\InvoiceCreated;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\GenerateInvoiceRequest;
 use App\Http\Requests\UpdateInvoiceRequest;
@@ -122,6 +123,12 @@ class InvoiceController extends Controller
                     'status'         => 'belum_bayar',
                     'issued_at'      => now(),
                 ]);
+
+                // ============================================================
+                // Trigger event InvoiceCreated → Listener akan otomatis kirim
+                // WhatsApp via WhatsAppService (Kondisi 1 dari requirement).
+                // ============================================================
+                event(new InvoiceCreated($invoice));
 
                 $createdInvoices[] = $invoice;
                 $months->addMonth();

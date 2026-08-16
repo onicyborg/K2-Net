@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Events\InvoiceCreated;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\NotificationLog;
@@ -59,6 +60,12 @@ class AutoGenerateInvoiceCommand extends Command
                 'status'         => 'belum_bayar',
                 'issued_at'      => now(),
             ]);
+
+            // ============================================================
+            // Trigger event InvoiceCreated → Listener akan otomatis kirim
+            // WhatsApp via WhatsAppService (Kondisi 1 dari requirement).
+            // ============================================================
+            event(new InvoiceCreated($invoice));
 
             $this->sendNotification($invoice, $customer);
             $created++;
