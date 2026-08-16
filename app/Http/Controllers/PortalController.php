@@ -15,6 +15,17 @@ use Illuminate\Support\Facades\DB;
 
 class PortalController extends Controller
 {
+    private function getUploadRules(): array
+    {
+        $maxSizeKb = SystemConfiguration::getValue('upload_max_size_kb', 5120);
+        $allowedTypes = SystemConfiguration::getValue('upload_allowed_types', ['jpg', 'jpeg', 'png', 'pdf']);
+        $mimes = implode(',', $allowedTypes);
+
+        return [
+            'payment_proof' => "required|file|mimes:{$mimes}|max:{$maxSizeKb}",
+        ];
+    }
+
     public function showPaymentPage(string $code)
     {
         $customer = Customer::where('portal_code', $code)->first();
@@ -30,12 +41,13 @@ class PortalController extends Controller
             ->get();
 
         $bankAccounts = SystemConfiguration::getValue('bank_account_info', []);
+        $bankAccount = $bankAccounts[0] ?? null;
         $companyName = SystemConfiguration::getValue('company_name', 'K2-Net');
 
         return view('pages.portal.index', [
             'customer'    => $customer,
             'invoices'    => $invoices,
-            'bankAccounts' => $bankAccounts,
+            'bankAccount' => $bankAccount,
             'companyName' => $companyName,
         ]);
     }
@@ -48,18 +60,21 @@ class PortalController extends Controller
             return response()->json(['message' => 'Kode tidak valid.'], 404);
         }
 
-        $validator = Validator::make($request->all(), [
+        $rules = array_merge([
             'invoice_ids'      => 'required|string',
             'transfer_to'      => 'required|string|max:255',
             'transfer_from'    => 'required|string|max:255',
             'transfer_amount'  => 'required|numeric|min:1000',
             'transfer_date'    => 'required|date',
-            'payment_proof'    => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
-        ], [
+        ], $this->getUploadRules());
+
+        $allowedTypes = SystemConfiguration::getValue('upload_allowed_types', ['jpg', 'jpeg', 'png', 'pdf']);
+        $maxSizeKb = SystemConfiguration::getValue('upload_max_size_kb', 5120);
+        $validator = Validator::make($request->all(), $rules, [
             'invoice_ids.required'   => 'Pilih minimal satu tagihan.',
             'payment_proof.required' => 'Bukti transfer wajib diupload.',
-            'payment_proof.mimes'   => 'Format file harus JPG, PNG, atau PDF.',
-            'payment_proof.max'     => 'Ukuran file maksimal 5MB.',
+            'payment_proof.mimes'   => 'Format file harus ' . implode(', ', $allowedTypes) . '.',
+            'payment_proof.max'     => 'Ukuran file maksimal ' . round($maxSizeKb / 1024, 1) . 'MB.',
         ]);
 
         if ($validator->fails()) {
@@ -87,10 +102,17 @@ class PortalController extends Controller
         $fileSize = $paymentProofFile->getSize();
         $fileType = strtolower($paymentProofFile->getClientOriginalExtension());
 
+        $bankAccount = SystemConfiguration::getValue('bank_account_info', []);
+        $bankAccount = $bankAccount[0] ?? null;
+
+        if (!$bankAccount) {
+            return response()->json(['message' => 'Konfigurasi rekening bank belum diatur.'], 500);
+        }
+
         $transferParts = explode('|', $request->transfer_to);
-        $bank = $transferParts[0] ?? '';
-        $accountNumber = $transferParts[1] ?? '';
-        $accountName = $transferParts[2] ?? '';
+        $bank = $bankAccount['bank'] ?? '';
+        $accountNumber = $bankAccount['account_number'] ?? '';
+        $accountName = $bankAccount['account_name'] ?? '';
 
         DB::beginTransaction();
         try {

@@ -91,6 +91,8 @@ class InvoiceController extends Controller
         $startDate = Carbon::parse($request->billing_period_start);
         $endDate   = Carbon::parse($request->billing_period_end);
 
+        $dueDay = \App\Models\SystemConfiguration::getValue('invoice_due_day', 15);
+
         $months = $startDate->copy();
         $createdInvoices = [];
 
@@ -98,7 +100,7 @@ class InvoiceController extends Controller
         try {
             while ($months->lte($endDate)) {
                 $period      = $months->copy()->startOfMonth();
-                $dueDate     = $period->copy()->day(15)->startOfDay();
+                $dueDate     = $period->copy()->addMonth()->day($dueDay)->startOfDay();
 
                 $existing = Invoice::where('customer_id', $customer->id)
                     ->where('billing_period', $period->toDateString())

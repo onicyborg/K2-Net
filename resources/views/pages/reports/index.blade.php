@@ -13,86 +13,113 @@
     </ul>
 @endsection
 
+@section('toolbar_actions')
+    <a href="#" id="btn_export_excel" class="btn btn-sm btn-light-success" style="display:none;">
+        <i class="ki-duotone ki-tablet-ksd fs-2 me-1"><span></span></i>
+        Export Excel
+    </a>
+@endsection
+
 @section('content')
 
-{{-- Filter Card --}}
 <div class="card card-flush mb-5">
-    <div class="card-header pt-5 pb-0">
-        <h3 class="card-title">Filter Laporan</h3>
-    </div>
     <div class="card-body py-5">
         <div class="row g-3 align-items-end">
-            <div class="col-md-3">
+            <div class="col-sm-6 col-lg-4">
                 <label class="form-label fw-semibold text-gray-700">Jenis Laporan</label>
-                <select id="report_type" class="form-select form-select-solid">
+                <select id="report_type" class="form-select form-select-solid" onchange="Reports.reload()">
                     <option value="invoices">Tagihan</option>
                     <option value="revenue">Pendapatan</option>
                     <option value="customers">Pelanggan</option>
                 </select>
             </div>
-            <div class="col-md-3">
+            <div class="col-6 col-lg-4">
                 <label class="form-label fw-semibold text-gray-700">Dari Tanggal</label>
-                <input type="date" id="from_date" class="form-control form-control-solid" />
+                <input type="date" id="from_date" class="form-control form-control-solid" onchange="Reports.reload()" />
             </div>
-            <div class="col-md-3">
+            <div class="col-6 col-lg-4">
                 <label class="form-label fw-semibold text-gray-700">Sampai Tanggal</label>
-                <input type="date" id="to_date" class="form-control form-control-solid" />
-            </div>
-            <div class="col-md-3">
-                <button type="button" id="btn_generate" class="btn btn-primary w-100">
-                    <i class="ki-duotone ki-magnifier fs-2 me-1"><span></span></i>
-                    Tampilkan
-                </button>
+                <input type="date" id="to_date" class="form-control form-control-solid" onchange="Reports.reload()" />
             </div>
         </div>
     </div>
 </div>
 
-{{-- Results Card --}}
-<div class="card card-flush">
-    <div class="card-header pt-5 pb-3">
-        <h3 class="card-title" id="results_title">Hasil Laporan</h3>
-    </div>
-    <div class="card-body pt-0">
-        {{-- Summary Stats --}}
-        <div id="summary_stats" class="row g-3 mb-5" style="display:none;"></div>
+<div id="summary_stats" class="row g-3 mb-5"></div>
 
-        {{-- Invoice / Customer Table --}}
-        <div id="results_table_wrapper" style="display:none;">
-            <table id="results_table" class="table align-middle table-row-dashed table-row-gray-300 fs-6 gy-5">
-                <thead id="results_table_head"></thead>
-                <tbody id="results_table_body" class="fw-semibold text-gray-700"></tbody>
+<div id="wrapper_invoices" class="card card-flush" style="display:none;">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table id="table_invoices" class="table table-bordered">
+                <thead>
+                    <tr class="fw-bold fs-6 text-gray-800">
+                        <th class="w-10px">#</th>
+                        <th class="min-w-120px">No. Tagihan</th>
+                        <th class="min-w-150px">Pelanggan</th>
+                        <th class="min-w-100px">Paket</th>
+                        <th class="min-w-100px">Periode</th>
+                        <th class="text-end min-w-100px">Jumlah</th>
+                        <th class="min-w-100px">Jatuh Tempo</th>
+                        <th class="min-w-80px">Status</th>
+                        <th class="min-w-100px">Lunas Pada</th>
+                    </tr>
+                </thead>
+                <tbody class="fw-semibold text-gray-700"></tbody>
             </table>
         </div>
-
-        {{-- Revenue Monthly Table --}}
-        <div id="results_revenue" style="display:none;">
-            <div class="table-responsive">
-                <table class="table table-sm table-hover align-middle">
-                    <thead class="table-light">
-                        <tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
-                            <th>Bulan</th>
-                            <th class="text-center">Total Tagihan</th>
-                            <th class="text-center">Lunas</th>
-                            <th class="text-end">Pendapatan</th>
-                            <th class="text-end">Piutang</th>
-                        </tr>
-                    </thead>
-                    <tbody id="revenue_monthly_body"></tbody>
-                </table>
-            </div>
+        <div class="d-flex justify-content-between align-items-center flex-wrap mt-5 gap-3">
+            <div id="invoices_length"></div>
+            <div id="invoices_paginate"></div>
         </div>
+    </div>
+</div>
 
-        {{-- Empty State --}}
-        <div id="results_empty" class="text-center py-15 text-muted">
-            <i class="ki-duotone ki-chart fs-3x mb-3" style="opacity:0.3;"><span></span></i>
-            <p>Pilih filter dan klik "Tampilkan" untuk melihat laporan.</p>
+<div id="wrapper_customers" class="card card-flush" style="display:none;">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table id="table_customers" class="table table-bordered">
+                <thead>
+                    <tr class="fw-bold fs-6 text-gray-800">
+                        <th class="w-10px">#</th>
+                        <th class="min-w-100px">Kode</th>
+                        <th class="min-w-150px">Nama</th>
+                        <th class="min-w-100px">Paket</th>
+                        <th class="min-w-80px">Status</th>
+                        <th class="text-center min-w-100px">Tagihan</th>
+                        <th class="text-end min-w-120px">Total Bayar</th>
+                        <th class="text-end min-w-120px">Sisa Tagihan</th>
+                    </tr>
+                </thead>
+                <tbody class="fw-semibold text-gray-700"></tbody>
+            </table>
         </div>
+        <div class="d-flex justify-content-between align-items-center flex-wrap mt-5 gap-3">
+            <div id="customers_length"></div>
+            <div id="customers_paginate"></div>
+        </div>
+    </div>
+</div>
 
-        {{-- Loading --}}
-        <div id="results_loading" class="text-center py-15" style="display:none;">
-            <span class="spinner-border spinner-border-sm align-middle text-primary me-2"></span>
-            Memuat data...
+<div id="wrapper_revenue" class="card card-flush" style="display:none;">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table id="table_revenue" class="table table-bordered">
+                <thead>
+                    <tr class="fw-bold fs-6 text-gray-800">
+                        <th class="w-10px">#</th>
+                        <th class="min-w-120px">Bulan</th>
+                        <th class="text-center min-w-100px">Total Tagihan</th>
+                        <th class="text-center min-w-80px">Lunas</th>
+                        <th class="text-end min-w-120px">Pendapatan</th>
+                        <th class="text-end min-w-120px">Piutang</th>
+                    </tr>
+                </thead>
+                <tbody class="fw-semibold text-gray-700"></tbody>
+            </table>
+        </div>
+        <div class="d-flex justify-content-between align-items-center flex-wrap mt-5 gap-3">
+            <div id="revenue_length"></div>
+            <div id="revenue_paginate"></div>
         </div>
     </div>
 </div>
@@ -104,187 +131,347 @@
 (function () {
     "use strict";
 
-    var formatRupiah = function (num) {
-        if (!num && num !== 0) return '—';
-        return 'Rp' + Number(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-    };
+    var Reports = {
+        dt: null,
+        type: 'invoices',
 
-    var formatDate = function (dateStr) {
-        if (!dateStr) return '—';
-        var d = new Date(dateStr);
-        return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-    };
+        statCard: function (label, value, icon, colorClass) {
+            return '<div class="col-md-3 col-6">' +
+                '<div class="card bg-light-' + colorClass + ' border-0 h-100">' +
+                '<div class="card-body d-flex align-items-center gap-3 py-3">' +
+                '<div class="flex-shrink-0"><i class="ki-duotone ' + icon + ' fs-2x text-' + colorClass + '"></i></div>' +
+                '<div>' +
+                '<div class="text-muted small fw-semibold">' + label + '</div>' +
+                '<div class="fw-bold fs-5 text-gray-900">' + value + '</div>' +
+                '</div></div></div></div>';
+        },
 
-    var currentType = 'invoices';
+        formatRupiah: function (num) {
+            if (num === null || num === undefined || num === '') return '—';
+            return 'Rp ' + Number(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        },
 
-    var statCard = function (label, value, icon, colorClass) {
-        return '<div class="col-md-3 col-6">' +
-            '<div class="card bg-light-' + colorClass + ' border-0 h-100">' +
-            '<div class="card-body d-flex align-items-center gap-3 py-3">' +
-            '<div class="flex-shrink-0">' +
-            '<i class="ki-duotone ' + icon + ' fs-2x text-' + colorClass + '"></i>' +
-            '</div>' +
-            '<div>' +
-            '<div class="text-muted small fw-semibold">' + label + '</div>' +
-            '<div class="fw-bold fs-5 text-gray-900" id="stat_' + label.replace(/\s/g, '_') + '">' + value + '</div>' +
-            '</div>' +
-            '</div></div></div>';
-    };
+        loadSummary: function () {
+            var type = document.getElementById('report_type').value;
+            var fromDate = document.getElementById('from_date').value;
+            var toDate = document.getElementById('to_date').value;
+            var url = "{{ route('admin.api.reports.summary', ['type' => '__TYPE__']) }}".replace('__TYPE__', type);
+            var params = [];
+            if (fromDate) params.push('from_date=' + fromDate);
+            if (toDate) params.push('to_date=' + toDate);
+            if (params.length) url += '?' + params.join('&');
 
-    var renderSummary = function (summary, type) {
-        var html = '';
-        if (type === 'revenue') {
-            html += statCard('Total Tagihan', summary.total_count, 'ki-bill', 'primary');
-            html += statCard('Lunas', summary.paid_count, 'ki-check-circle', 'success');
-            html += statCard('Piutang', formatRupiah(summary.total_outstanding), 'ki-wallet', 'danger');
-            html += statCard('Collection Rate', summary.collection_rate + '%', 'ki-chart-line-down', 'warning');
-        } else if (type === 'invoices') {
-            html += statCard('Total', summary.total_count, 'ki-bill', 'primary');
-            html += statCard('Lunas', summary.paid_count, 'ki-check-circle', 'success');
-            html += statCard('Belum Bayar', summary.unpaid_count, 'ki-wallet', 'warning');
-            html += statCard('Jatuh Tempo', summary.overdue_count, 'ki-timer', 'danger');
-        } else if (type === 'customers') {
-            html += statCard('Total', summary.total_count, 'ki-users', 'primary');
-            html += statCard('Aktif', summary.active_count, 'ki-check-circle', 'success');
-            html += statCard('Isolir', summary.isolir_count, 'ki-shield-cross', 'warning');
-            html += statCard('Nonaktif', summary.nonaktif_count, 'ki-ghost', 'dark');
-        }
-        document.getElementById('summary_stats').innerHTML = html;
-        document.getElementById('summary_stats').style.display = '';
-    };
+            fetch(url, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(function (res) { return res.json(); })
+                .then(function (resp) {
+                    var s = resp.summary || {};
+                    var html = '';
+                    if (type === 'revenue') {
+                        html += this.statCard('Total Tagihan', s.total_count || 0, 'ki-bill', 'primary');
+                        html += this.statCard('Lunas', s.paid_count || 0, 'ki-check-circle', 'success');
+                        html += this.statCard('Piutang', this.formatRupiah(s.total_outstanding), 'ki-wallet', 'danger');
+                        html += this.statCard('Collection Rate', (s.collection_rate || 0) + '%', 'ki-chart-line-down', 'warning');
+                    } else if (type === 'invoices') {
+                        html += this.statCard('Total', s.total_count || 0, 'ki-bill', 'primary');
+                        html += this.statCard('Lunas', s.paid_count || 0, 'ki-check-circle', 'success');
+                        html += this.statCard('Belum Bayar', s.unpaid_count || 0, 'ki-wallet', 'warning');
+                        html += this.statCard('Jatuh Tempo', s.overdue_count || 0, 'ki-timer', 'danger');
+                    } else if (type === 'customers') {
+                        html += this.statCard('Total', s.total_count || 0, 'ki-users', 'primary');
+                        html += this.statCard('Aktif', s.active_count || 0, 'ki-check-circle', 'success');
+                        html += this.statCard('Isolir', s.isolir_count || 0, 'ki-shield-cross', 'warning');
+                        html += this.statCard('Nonaktif', s.nonaktif_count || 0, 'ki-ghost', 'dark');
+                    }
+                    document.getElementById('summary_stats').innerHTML = html;
+                }.bind(this));
+        },
 
-    var renderInvoiceTable = function (data) {
-        document.getElementById('results_table_head').innerHTML =
-            '<tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">' +
-            '<th>No. Tagihan</th><th>Pelanggan</th><th>Paket</th><th>Periode</th>' +
-            '<th class="text-end">Jumlah</th><th>Jatuh Tempo</th><th>Status</th></tr>';
-        document.getElementById('results_table_body').innerHTML = '';
-        if (!data.length) {
-            document.getElementById('results_table_body').innerHTML =
-                '<tr><td colspan="7" class="text-center text-muted py-8">Tidak ada data.</td></tr>';
-        } else {
-            data.forEach(function (row) {
-                var badgeClass = row.status === 'lunas' ? 'success' :
-                    row.status === 'belum_bayar' ? 'danger' :
-                    row.status === 'menunggu_verifikasi' ? 'warning' : 'dark';
-                var overdueMark = row.is_overdue ? '<span class="badge badge-danger ms-1">Overdue</span>' : '';
-                var tr = document.createElement('tr');
-                tr.innerHTML =
-                    '<td><span class="text-primary fw-bold">' + (row.invoice_number || '—') + '</span></td>' +
-                    '<td><span class="text-gray-900 fw-semibold">' + (row.customer_name || '—') + '</span></td>' +
-                    '<td><span class="text-gray-600">' + (row.package_name || '—') + '</span></td>' +
-                    '<td><span class="text-gray-600">' + (row.billing_period || '—') + '</span></td>' +
-                    '<td class="text-end"><span class="fw-bold text-gray-900">' + formatRupiah(row.amount) + '</span></td>' +
-                    '<td><span class="text-gray-600">' + formatDate(row.due_date) + '</span></td>' +
-                    '<td><span class="badge badge-' + badgeClass + '">' + (row.status_label || row.status) + '</span>' + overdueMark + '</td>';
-                document.getElementById('results_table_body').appendChild(tr);
-            });
-        }
-        document.getElementById('results_table_wrapper').style.display = '';
-    };
+        getDatatableUrl: function () {
+            var type = document.getElementById('report_type').value;
+            var fromDate = document.getElementById('from_date').value;
+            var toDate = document.getElementById('to_date').value;
+            var baseUrl = "{{ route('admin.api.reports.datatable', ['type' => '__TYPE__']) }}".replace('__TYPE__', type);
+            var params = [];
+            if (fromDate) params.push('from_date=' + fromDate);
+            if (toDate) params.push('to_date=' + toDate);
+            return baseUrl + (params.length ? '?' + params.join('&') : '');
+        },
 
-    var renderCustomerTable = function (data) {
-        document.getElementById('results_table_head').innerHTML =
-            '<tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">' +
-            '<th>Kode</th><th>Nama</th><th>Paket</th><th>Status</th>' +
-            '<th class="text-center">Tagihan</th><th class="text-end">Total Bayar</th><th class="text-end">Sisa Tagihan</th></tr>';
-        document.getElementById('results_table_body').innerHTML = '';
-        if (!data.length) {
-            document.getElementById('results_table_body').innerHTML =
-                '<tr><td colspan="7" class="text-center text-muted py-8">Tidak ada data.</td></tr>';
-        } else {
-            data.forEach(function (row) {
-                var badgeClass = row.status === 'aktif' ? 'success' :
-                    row.status === 'isolir' ? 'warning' : 'dark';
-                var tr = document.createElement('tr');
-                tr.innerHTML =
-                    '<td><span class="text-gray-600 small">' + (row.code || '—') + '</span></td>' +
-                    '<td><span class="text-gray-900 fw-semibold">' + (row.name || '—') + '</span></td>' +
-                    '<td><span class="text-gray-600">' + (row.package_name || '—') + '</span></td>' +
-                    '<td><span class="badge badge-' + badgeClass + '">' + (row.status_label || row.status) + '</span></td>' +
-                    '<td class="text-center"><span class="text-gray-700">' + row.total_invoices + ' (<span class="text-success">' + row.paid_invoices + '</span> lunas)</span></td>' +
-                    '<td class="text-end"><span class="fw-bold text-success">' + formatRupiah(row.total_revenue) + '</span></td>' +
-                    '<td class="text-end"><span class="fw-bold text-danger">' + formatRupiah(row.outstanding) + '</span></td>';
-                document.getElementById('results_table_body').appendChild(tr);
-            });
-        }
-        document.getElementById('results_table_wrapper').style.display = '';
-    };
+        getExportUrl: function () {
+            var type = document.getElementById('report_type').value;
+            var fromDate = document.getElementById('from_date').value;
+            var toDate = document.getElementById('to_date').value;
+            var baseUrl = "{{ route('admin.api.reports.export', ['type' => '__TYPE__']) }}".replace('__TYPE__', type);
+            var params = [];
+            if (fromDate) params.push('from_date=' + fromDate);
+            if (toDate) params.push('to_date=' + toDate);
+            return baseUrl + (params.length ? '?' + params.join('&') : '');
+        },
 
-    var renderRevenueTable = function (monthly) {
-        document.getElementById('revenue_monthly_body').innerHTML = '';
-        if (!monthly.length) {
-            document.getElementById('revenue_monthly_body').innerHTML =
-                '<tr><td colspan="5" class="text-center text-muted py-8">Tidak ada data.</td></tr>';
-        } else {
-            monthly.forEach(function (row) {
-                var tr = document.createElement('tr');
-                tr.innerHTML =
-                    '<td><span class="fw-semibold text-gray-900">' + row.month + '</span></td>' +
-                    '<td class="text-center"><span class="badge badge-primary">' + row.total_count + '</span></td>' +
-                    '<td class="text-center"><span class="badge badge-success">' + row.paid_count + '</span></td>' +
-                    '<td class="text-end"><span class="fw-bold text-success">' + formatRupiah(row.paid_amount) + '</span></td>' +
-                    '<td class="text-end"><span class="fw-bold text-danger">' + formatRupiah(row.outstanding_amount) + '</span></td>';
-                document.getElementById('revenue_monthly_body').appendChild(tr);
-            });
-        }
-        document.getElementById('results_revenue').style.display = '';
-    };
-
-    var generateReport = function () {
-        var type = document.getElementById('report_type').value;
-        var fromDate = document.getElementById('from_date').value;
-        var toDate = document.getElementById('to_date').value;
-
-        document.getElementById('summary_stats').style.display = 'none';
-        document.getElementById('results_table_wrapper').style.display = 'none';
-        document.getElementById('results_revenue').style.display = 'none';
-        document.getElementById('results_empty').style.display = 'none';
-        document.getElementById('results_loading').style.display = '';
-
-        var title = document.getElementById('report_type').selectedOptions[0].text;
-        document.getElementById('results_title').textContent = 'Hasil Laporan — ' + title;
-
-        var url = "{{ route('admin.api.reports.generate', ['type' => '__TYPE__']) }}".replace('__TYPE__', type);
-        var params = [];
-        if (fromDate) params.push('from_date=' + fromDate);
-        if (toDate) params.push('to_date=' + toDate);
-        if (params.length) url += '?' + params.join('&');
-
-        fetch(url, {
-            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
-        })
-        .then(function (res) { return res.json(); })
-        .then(function (data) {
-            document.getElementById('results_loading').style.display = 'none';
-
-            renderSummary(data.summary, type);
-
-            if (type === 'revenue') {
-                renderRevenueTable(data.monthly || []);
-            } else if (type === 'invoices') {
-                renderInvoiceTable(data.data || []);
-            } else if (type === 'customers') {
-                renderCustomerTable(data.data || []);
+        reload: function () {
+            var newType = document.getElementById('report_type').value;
+            if (newType !== this.type) {
+                this.type = newType;
+                this.init();
+            } else if (this.dt) {
+                this.dt.ajax.url(this.getDatatableUrl()).load();
             }
-        })
-        .catch(function (err) {
-            document.getElementById('results_loading').style.display = 'none';
-            document.getElementById('results_empty').style.display = '';
-            console.error('Gagal memuat laporan:', err);
-        });
+            this.loadSummary();
+        },
+
+        init: function () {
+            var self = this;
+            var type = document.getElementById('report_type').value;
+
+            var tableId, wrapperId, prefix;
+            if (type === 'revenue') {
+                tableId = 'table_revenue';
+                wrapperId = 'wrapper_revenue';
+                prefix = 'revenue';
+            } else if (type === 'customers') {
+                tableId = 'table_customers';
+                wrapperId = 'wrapper_customers';
+                prefix = 'customers';
+            } else {
+                tableId = 'table_invoices';
+                wrapperId = 'wrapper_invoices';
+                prefix = 'invoices';
+            }
+
+            ['wrapper_invoices', 'wrapper_customers', 'wrapper_revenue'].forEach(function (id) {
+                document.getElementById(id).style.display = (id === wrapperId) ? '' : 'none';
+            });
+
+            if ($.fn.DataTable.isDataTable('#' + tableId)) {
+                $('#' + tableId).DataTable().destroy();
+            }
+
+            var columns;
+            if (type === 'revenue') {
+                columns = [
+                    { data: null, name: null, orderable: false, searchable: false },
+                    { data: 'month', name: 'month', orderable: true, searchable: false },
+                    { data: 'total_count', name: 'total_count', orderable: true, searchable: false },
+                    { data: 'paid_count', name: 'paid_count', orderable: true, searchable: false },
+                    { data: 'paid_amount', name: 'paid_amount', orderable: true, searchable: false },
+                    { data: 'outstanding_amount', name: 'outstanding_amount', orderable: true, searchable: false },
+                ];
+            } else if (type === 'customers') {
+                columns = [
+                    { data: null, name: null, orderable: false, searchable: false },
+                    { data: 'code', name: 'code', orderable: true, searchable: false },
+                    { data: 'name', name: 'name', orderable: true, searchable: false },
+                    { data: 'package_name', name: 'package_name', orderable: false, searchable: false },
+                    { data: 'status', name: 'status', orderable: true, searchable: false },
+                    { data: 'total_invoices', name: 'total_invoices', orderable: false, searchable: false },
+                    { data: 'total_revenue', name: 'total_revenue', orderable: false, searchable: false },
+                    { data: 'outstanding', name: 'outstanding', orderable: false, searchable: false },
+                ];
+            } else {
+                columns = [
+                    { data: null, name: null, orderable: false, searchable: false },
+                    { data: 'invoice_number', name: 'invoice_number', orderable: true, searchable: false },
+                    { data: 'customer_name', name: 'customer_name', orderable: true, searchable: false },
+                    { data: 'package_name', name: 'package_name', orderable: false, searchable: false },
+                    { data: 'billing_period', name: 'billing_period', orderable: true, searchable: false },
+                    { data: 'formatted_amount', name: 'amount', orderable: true, searchable: false },
+                    { data: 'due_date', name: 'due_date', orderable: true, searchable: false },
+                    { data: 'status', name: 'status', orderable: true, searchable: false },
+                    { data: 'paid_at', name: 'paid_at', orderable: true, searchable: false },
+                ];
+            }
+
+            self.dt = $('#' + tableId).DataTable({
+                processing: true,
+                serverSide: true,
+                ajax: {
+                    url: self.getDatatableUrl(),
+                    type: 'GET',
+                    dataSrc: function (json) {
+                        document.getElementById('btn_export_excel').style.display = '';
+                        document.getElementById('btn_export_excel').href = self.getExportUrl();
+                        return json.data || [];
+                    },
+                    error: function () {
+                        console.error('DataTables AJAX error');
+                    }
+                },
+                columns: columns,
+                columnDefs: self.getColumnDefs(type),
+                pagingType: 'simple_numbers',
+                pageLength: 15,
+                lengthMenu: [[15, 25, 50], [15, 25, 50]],
+                order: [[1, 'asc']],
+                searchDelay: 400,
+                language: {
+                    lengthMenu: 'Tampilkan _MENU_',
+                    zeroRecords: 'Tidak ada data.',
+                    info: 'Menampilkan _START_–_END_ dari _TOTAL_',
+                    infoEmpty: 'Menampilkan 0 dari 0',
+                    infoFiltered: '(disaring dari _MAX_ total)',
+                    paginate: {
+                        previous: '<i class="ki-duotone ki-left fs-3"><span class="path1"></span><span class="path2"></span></i>',
+                        next: '<i class="ki-duotone ki-right fs-3"><span class="path1"></span><span class="path2"></span></i>'
+                    },
+                    processing: '<span class="spinner-border spinner-border-sm align-middle text-primary me-2"></span> Memuat...',
+                },
+                drawCallback: function () {
+                    document.getElementById('btn_export_excel').href = self.getExportUrl();
+                    if (document.getElementById(prefix + '_paginate').innerHTML.trim() !== '') return;
+                    var wrapper = document.querySelector('#' + tableId + '_wrapper');
+                    if (!wrapper) return;
+                    var pageEl = wrapper.querySelector('.dataTables_paginate');
+                    var lengthEl = wrapper.querySelector('.dataTables_length');
+                    if (lengthEl) {
+                        var selectEl = lengthEl.querySelector('select');
+                        if (selectEl) selectEl.className = 'form-select form-select-sm form-select-solid w-auto';
+                        document.getElementById(prefix + '_length').innerHTML = lengthEl.outerHTML;
+                        lengthEl.remove();
+                    }
+                    if (pageEl) {
+                        document.getElementById(prefix + '_paginate').innerHTML = pageEl.outerHTML;
+                        pageEl.remove();
+                    }
+                }
+            });
+        },
+
+        getColumnDefs: function (type) {
+            var self = this;
+            if (type === 'revenue') {
+                return [
+                    {
+                        targets: 0, render: function (data, type, row, meta) {
+                            return '<span class="text-muted">' + (meta.row + meta.settings._iDisplayStart + 1) + '</span>';
+                        }
+                    },
+                    {
+                        targets: 1, render: function (d) { return '<span class="fw-bold text-gray-900">' + (d || '—') + '</span>'; }
+                    },
+                    {
+                        targets: 2, render: function (d) {
+                            return '<span class="badge badge-primary">' + d + '</span>';
+                        }
+                    },
+                    {
+                        targets: 3, render: function (d) {
+                            return '<span class="badge badge-success">' + d + '</span>';
+                        }
+                    },
+                    {
+                        targets: 4, render: function (d) {
+                            return '<span class="fw-bold text-success">' + self.formatRupiah(d) + '</span>';
+                        }
+                    },
+                    {
+                        targets: 5, render: function (d) {
+                            return '<span class="fw-bold text-danger">' + self.formatRupiah(d) + '</span>';
+                        }
+                    },
+                ];
+            } else if (type === 'customers') {
+                return [
+                    {
+                        targets: 0, render: function (data, type, row, meta) {
+                            return '<span class="text-muted">' + (meta.row + meta.settings._iDisplayStart + 1) + '</span>';
+                        }
+                    },
+                    {
+                        targets: 1, render: function (d) { return '<span class="text-gray-600">' + (d || '—') + '</span>'; }
+                    },
+                    {
+                        targets: 2, render: function (d) { return '<span class="fw-bold text-gray-900">' + (d || '—') + '</span>'; }
+                    },
+                    {
+                        targets: 3, render: function (d) {
+                            return d ? '<span class="badge badge-light-primary">' + d + '</span>' : '<span class="text-muted">—</span>';
+                        }
+                    },
+                    {
+                        targets: 4, render: function (d) {
+                            var map = { 'aktif': 'success', 'isolir': 'warning', 'nonaktif': 'dark' };
+                            var cls = map[d] || 'secondary';
+                            var label = { 'aktif': 'Aktif', 'isolir': 'Isolir', 'nonaktif': 'Nonaktif' }[d] || d || '—';
+                            return '<span class="badge badge-light-' + cls + '">' + label + '</span>';
+                        }
+                    },
+                    {
+                        targets: 5, render: function (d, type, row) {
+                            return d + ' (<span class="text-success">' + (row.paid_invoices || 0) + '</span> lunas)';
+                        }
+                    },
+                    {
+                        targets: 6, className: 'text-end', render: function (d) {
+                            return '<span class="fw-bold text-success">' + self.formatRupiah(d) + '</span>';
+                        }
+                    },
+                    {
+                        targets: 7, className: 'text-end', render: function (d) {
+                            return '<span class="fw-bold text-danger">' + self.formatRupiah(d) + '</span>';
+                        }
+                    },
+                ];
+            } else {
+                return [
+                    {
+                        targets: 0, render: function (data, type, row, meta) {
+                            return '<span class="text-muted">' + (meta.row + meta.settings._iDisplayStart + 1) + '</span>';
+                        }
+                    },
+                    {
+                        targets: 1, render: function (d) { return '<span class="text-gray-600">' + (d || '—') + '</span>'; }
+                    },
+                    {
+                        targets: 2, render: function (d) { return '<span class="fw-bold text-gray-900">' + (d || '—') + '</span>'; }
+                    },
+                    {
+                        targets: 3, render: function (d) {
+                            return d ? '<span class="badge badge-light-primary">' + d + '</span>' : '<span class="text-muted">—</span>';
+                        }
+                    },
+                    {
+                        targets: 4, render: function (d) { return '<span class="text-gray-600">' + (d || '—') + '</span>'; }
+                    },
+                    {
+                        targets: 5, className: 'text-end', render: function (d) {
+                            return '<span class="fw-bold text-gray-900">' + (d || '—') + '</span>';
+                        }
+                    },
+                    {
+                        targets: 6, render: function (d) { return '<span class="text-gray-600">' + (d || '—') + '</span>'; }
+                    },
+                    {
+                        targets: 7, render: function (d, type, row) {
+                            var map = { 'lunas': 'success', 'belum_bayar': 'danger', 'menunggu_verifikasi': 'warning', 'ditolak': 'dark' };
+                            var cls = map[d] || 'secondary';
+                            var label = { 'lunas': 'Lunas', 'belum_bayar': 'Belum Bayar', 'menunggu_verifikasi': 'Menunggu Verifikasi', 'ditolak': 'Ditolak' }[d] || d || '—';
+                            return '<span class="badge badge-light-' + cls + '">' + label + '</span>';
+                        }
+                    },
+                    {
+                        targets: 8, render: function (d) { return '<span class="text-gray-600">' + (d || '—') + '</span>'; }
+                    },
+                ];
+            }
+        }
     };
 
-    document.getElementById('btn_generate').addEventListener('click', generateReport);
+    window.Reports = Reports;
 
-    // Set default date range: first day of current month to today
     var today = new Date();
     var firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
     document.getElementById('to_date').value = today.toISOString().split('T')[0];
     document.getElementById('from_date').value = firstOfMonth.toISOString().split('T')[0];
 
-    // Auto-generate on page load
-    generateReport();
+    document.getElementById('btn_export_excel').addEventListener('click', function (e) {
+        if (!this.href || this.href === '#') {
+            e.preventDefault();
+            alert('Tunggu data selesai dimuat.');
+        }
+    });
+
+    Reports.init();
+    Reports.loadSummary();
 })();
 </script>
 @endpush

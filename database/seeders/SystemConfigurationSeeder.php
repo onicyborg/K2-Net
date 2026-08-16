@@ -10,53 +10,12 @@ class SystemConfigurationSeeder extends Seeder
     public function run(): void
     {
         $configs = [
-            // Billing
-            [
-                'key' => 'invoice_generate_day',
-                'value' => '25',
-                'type' => 'number',
-                'description' => 'Tanggal generate invoice bulanan',
-                'group_name' => 'billing',
-                'is_editable' => true,
-            ],
-            [
-                'key' => 'invoice_due_day',
-                'value' => '5',
-                'type' => 'number',
-                'description' => 'Tanggal jatuh tempo (bulan berikutnya)',
-                'group_name' => 'billing',
-                'is_editable' => true,
-            ],
-            [
-                'key' => 'notification_reminder_days',
-                'value' => json_encode([-3, 0, 3]),
-                'type' => 'json',
-                'description' => 'Hari-hari pengingat notifikasi',
-                'group_name' => 'notification',
-                'is_editable' => true,
-            ],
             // General
-            [
-                'key' => 'upload_max_size_kb',
-                'value' => '5120',
-                'type' => 'number',
-                'description' => 'Maks ukuran upload bukti transfer (KB)',
-                'group_name' => 'general',
-                'is_editable' => true,
-            ],
-            [
-                'key' => 'upload_allowed_types',
-                'value' => json_encode(['pdf', 'jpg', 'jpeg', 'png']),
-                'type' => 'json',
-                'description' => 'Tipe file yang diizinkan untuk upload',
-                'group_name' => 'general',
-                'is_editable' => true,
-            ],
             [
                 'key' => 'company_name',
                 'value' => 'K2-Net',
                 'type' => 'string',
-                'description' => 'Nama perusahaan/brand',
+                'description' => 'Nama Perusahaan',
                 'group_name' => 'general',
                 'is_editable' => true,
             ],
@@ -64,7 +23,7 @@ class SystemConfigurationSeeder extends Seeder
                 'key' => 'company_address',
                 'value' => '',
                 'type' => 'string',
-                'description' => 'Alamat perusahaan',
+                'description' => 'Alamat Perusahaan',
                 'group_name' => 'general',
                 'is_editable' => true,
             ],
@@ -72,33 +31,33 @@ class SystemConfigurationSeeder extends Seeder
                 'key' => 'company_phone',
                 'value' => '',
                 'type' => 'string',
-                'description' => 'Nomor telepon perusahaan',
+                'description' => 'Nomor Telepon',
                 'group_name' => 'general',
                 'is_editable' => true,
             ],
-            // Notification
+            // Billing
             [
-                'key' => 'whatsapp_api_url',
-                'value' => '',
-                'type' => 'string',
-                'description' => 'URL API WhatsApp gateway',
-                'group_name' => 'notification',
+                'key' => 'invoice_due_day',
+                'value' => '10',
+                'type' => 'number',
+                'description' => 'Tanggal Jatuh Tempo (bulan berikutnya)',
+                'group_name' => 'billing',
                 'is_editable' => true,
             ],
             [
-                'key' => 'email_from_address',
-                'value' => '',
-                'type' => 'string',
-                'description' => 'Alamat email pengirim notifikasi',
-                'group_name' => 'notification',
+                'key' => 'upload_max_size_kb',
+                'value' => '5120',
+                'type' => 'number',
+                'description' => 'Maks Ukuran Upload Bukti Transfer (KB)',
+                'group_name' => 'billing',
                 'is_editable' => true,
             ],
             [
-                'key' => 'email_from_name',
-                'value' => 'K2-Net',
-                'type' => 'string',
-                'description' => 'Nama pengirim email',
-                'group_name' => 'notification',
+                'key' => 'upload_allowed_types',
+                'value' => json_encode(['pdf', 'jpg', 'jpeg', 'png']),
+                'type' => 'json',
+                'description' => 'Tipe File yang Dizinkan',
+                'group_name' => 'billing',
                 'is_editable' => true,
             ],
             [
@@ -107,7 +66,7 @@ class SystemConfigurationSeeder extends Seeder
                     ['bank' => 'Bank BCA', 'account_number' => '1234567890', 'account_name' => 'K2-Net'],
                 ]),
                 'type' => 'json',
-                'description' => 'Info rekening bank untuk transfer',
+                'description' => 'Info Rekening Bank',
                 'group_name' => 'billing',
                 'is_editable' => true,
             ],
@@ -119,5 +78,15 @@ class SystemConfigurationSeeder extends Seeder
                 $config
             );
         }
+
+        // Remove configs that are no longer needed
+        $removeKeys = [
+            'invoice_generate_day',
+            'notification_reminder_days',
+            'whatsapp_api_url',
+            'email_from_address',
+            'email_from_name',
+        ];
+        SystemConfiguration::whereIn('key', $removeKeys)->delete();
     }
 }

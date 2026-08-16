@@ -157,7 +157,7 @@
     </div>
 
     {{-- Paket Populer --}}
-    <div class="col-lg-4 mb-5 mb-xl-0">
+    <div class="col-12 col-lg-4 mb-5 mb-xl-0">
         <div class="card card-flush h-100">
             <div class="card-header pt-5">
                 <div class="card-title d-flex flex-column">

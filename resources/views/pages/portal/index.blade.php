@@ -138,23 +138,24 @@
             <span class="fs-3 fw-bold text-primary" id="total_amount">Rp0</span>
         </div>
 
+        {{-- FIXED BANK ACCOUNT --}}
+        @if($bankAccount)
+        <div class="alert alert-info">
+            <div>
+                <div class="fw-bold text-gray-900 mb-1">Transfer ke Rekening Berikut:</div>
+                <div class="text-gray-700">
+                    <strong>{{ $bankAccount['bank'] }}</strong> —
+                    {{ $bankAccount['account_number'] }} a.n <strong>{{ $bankAccount['account_name'] }}</strong>
+                </div>
+            </div>
+        </div>
+        @endif
+
         {{-- PAYMENT FORM --}}
         <form id="payment_form" enctype="multipart/form-data">
             @csrf
             <input type="hidden" name="invoice_ids" id="invoice_ids" value="" />
-
             <div class="row g-3">
-                <div class="col-md-6">
-                    <label class="form-label fw-bold">Transfer ke <span class="text-danger">*</span></label>
-                    <select name="transfer_to" id="transfer_to" class="form-select" required>
-                        <option value="">— Pilih Rekening —</option>
-                        @foreach($bankAccounts as $bank)
-                        <option value="{{ $bank['bank'] }}|{{ $bank['account_number'] }}|{{ $bank['account_name'] }}">
-                            {{ $bank['bank'] }} — {{ $bank['account_number'] }} a.n {{ $bank['account_name'] }}
-                        </option>
-                        @endforeach
-                    </select>
-                </div>
                 <div class="col-md-6">
                     <label class="form-label fw-bold">Jumlah Transfer (Rp) <span class="text-danger">*</span></label>
                     <input type="number" name="transfer_amount" id="transfer_amount"
@@ -172,11 +173,11 @@
                            class="form-control" required
                            value="{{ \Carbon\Carbon::today()->format('Y-m-d') }}" />
                 </div>
-                <div class="col-12">
+                <div class="col-md-6">
                     <label class="form-label fw-bold">Bukti Transfer <span class="text-danger">*</span></label>
                     <input type="file" name="payment_proof" id="payment_proof"
                            class="form-control" accept=".jpg,.jpeg,.png,.pdf" required />
-                    <div class="form-text">Format: JPG, PNG, PDF. Maksimal 5MB.</div>
+                    <div class="form-text">Format: JPG, PNG, PDF. Maksimal {{ round(\App\Models\SystemConfiguration::getValue('upload_max_size_kb', 5120) / 1024, 1) }}MB.</div>
                     <div class="invalid-feedback" id="payment_proof_error"></div>
                 </div>
             </div>
@@ -273,13 +274,12 @@
 
             document.getElementById('invoice_ids').value = Array.from(selectedInvoices).join(',');
 
-            var transferTo = document.getElementById('transfer_to').value;
             var transferAmount = parseInt(document.getElementById('transfer_amount').value, 10);
             var transferFrom = document.getElementById('transfer_from').value.trim();
             var transferDate = document.getElementById('transfer_date').value;
             var proofFile = document.getElementById('payment_proof').files[0];
 
-            if (!transferTo || !transferAmount || !transferFrom || !transferDate || !proofFile) {
+            if (!transferAmount || !transferFrom || !transferDate || !proofFile) {
                 Swal.fire({ text: "Lengkapi semua field yang wajib diisi.", icon: "warning", buttonsStyling: false, confirmButtonText: "Ok", customClass: { confirmButton: "btn btn-warning" } });
                 return;
             }

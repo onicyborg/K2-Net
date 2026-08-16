@@ -45,30 +45,31 @@
                        style="z-index:1; left: 12px; top: 50%; transform: translateY(-50%); pointer-events: none;"></i>
                     <input type="text"
                            data-kt-customers-table-filter="search"
-                           class="form-control form-control-solid w-250px ps-12 pe-5"
+                           class="form-control form-control-solid w-200px w-sm-250px ps-12 pe-5"
                            placeholder="Cari pelanggan..." />
                 </div>
             </div>
         </div>
         <div class="card-body pt-0">
-            <table id="kt_customers_table"
-                   class="table align-middle table-row-dashed table-row-gray-300 fs-6 gy-5">
-                <thead>
-                    <tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
-                        <th class="w-10px">#</th>
-                        <th class="min-w-150px">Nama</th>
-                        <th class="min-w-120px">Email</th>
-                        <th class="min-w-100px">No. HP</th>
-                        <th class="min-w-100px">Paket</th>
-                        <th class="min-w-80px">Status</th>
-                        <th class="text-end min-w-70px">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody class="fw-semibold text-gray-700"></tbody>
-            </table>
-            <div id="kt_customers_pagination" class="d-flex justify-content-between align-items-center flex-wrap mt-5 gap-3">
-                <div class="d-flex align-items-center gap-3" id="kt_customers_length"></div>
-                <div class="d-flex align-items-center" id="kt_customers_info"></div>
+            <div class="table-responsive">
+                <table id="kt_customers_table"
+                       class="table align-middle table-row-dashed table-row-gray-300 fs-6 gy-5">
+                    <thead>
+                        <tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
+                            <th class="w-10px">#</th>
+                            <th class="min-w-150px">Nama</th>
+                            <th class="min-w-120px">Email</th>
+                            <th class="min-w-100px">No. HP</th>
+                            <th class="min-w-100px">Paket</th>
+                            <th class="min-w-80px">Status</th>
+                            <th class="text-end min-w-70px">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="fw-semibold text-gray-700"></tbody>
+                </table>
+            </div>
+            <div class="d-flex justify-content-between align-items-center flex-wrap mt-5 gap-3">
+                <div id="kt_customers_length"></div>
                 <div id="kt_customers_paginate"></div>
             </div>
         </div>
@@ -78,7 +79,7 @@
 
     {{-- Create Customer Modal --}}
     <div class="modal fade" tabindex="-1" id="kt_modal_create_customer">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-fullscreen-sm-down">
             <div class="modal-content">
                 <div class="modal-header">
                     <h3 class="modal-title">Tambah Pelanggan</h3>
@@ -160,7 +161,7 @@
 
     {{-- Edit Customer Modal --}}
     <div class="modal fade" tabindex="-1" id="kt_modal_edit_customer">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-fullscreen-sm-down">
             <div class="modal-content">
                 <div class="modal-header">
                     <h3 class="modal-title">Edit Pelanggan</h3>
@@ -301,7 +302,6 @@
     var drawCallback = function (settings) {
         var wrapper = document.querySelector('#kt_customers_table_wrapper');
         if (!wrapper) return;
-        var infoEl   = wrapper.querySelector('.dataTables_info');
         var pageEl   = wrapper.querySelector('.dataTables_paginate');
         var lengthEl = wrapper.querySelector('.dataTables_length');
         if (lengthEl) {
@@ -309,10 +309,6 @@
             if (selectEl) selectEl.className = 'form-select form-select-sm form-select-solid w-auto';
             var wrap = document.getElementById('kt_customers_length');
             if (wrap) { wrap.innerHTML = lengthEl.outerHTML; lengthEl.remove(); }
-        }
-        if (infoEl) {
-            var wrap = document.getElementById('kt_customers_info');
-            if (wrap) { wrap.innerHTML = infoEl.outerHTML; infoEl.remove(); }
         }
         if (pageEl) {
             var wrap = document.getElementById('kt_customers_paginate');

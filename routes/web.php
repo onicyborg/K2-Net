@@ -2,8 +2,10 @@
 
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\InvoiceController;
+use App\Http\Controllers\Admin\NotificationLogController;
 use App\Http\Controllers\Admin\PackageController;
 use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\SystemConfigurationController;
 use App\Http\Controllers\Admin\VerificationController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
@@ -29,8 +31,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/invoices/{id}', [InvoiceController::class, 'index'])->name('invoices.show');
         Route::get('/verifications', [VerificationController::class, 'index'])->name('verifications.index');
         Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
-        Route::get('/notifications', fn () => view('pages.notifications.index'))->name('notifications.index');
-        Route::get('/configurations', fn () => view('pages.configurations.index'))->name('configurations.index');
+        Route::get('/notifications', [NotificationLogController::class, 'index'])->name('notifications.index');
+        Route::get('/configurations', [SystemConfigurationController::class, 'index'])->name('configurations.index');
 
         // API routes (session-based auth)
         Route::get('/api/customers/datatable', [CustomerController::class, 'datatable'])->name('api.customers.datatable');
@@ -53,7 +55,12 @@ Route::middleware('auth')->group(function () {
         Route::post('/api/packages', [PackageController::class, 'store'])->name('api.packages.store');
         Route::put('/api/packages/{package}', [PackageController::class, 'update'])->name('api.packages.update');
         Route::delete('/api/packages/{package}', [PackageController::class, 'destroy'])->name('api.packages.destroy');
-        Route::get('/api/reports/{type}', [ReportController::class, 'generate'])->name('api.reports.generate');
+        Route::get('/api/reports/{type}/datatable', [ReportController::class, 'serverSide'])->name('api.reports.datatable');
+        Route::get('/api/reports/{type}/summary', [ReportController::class, 'summary'])->name('api.reports.summary');
+        Route::get('/api/reports/{type}/export', [ReportController::class, 'export'])->name('api.reports.export');
+        Route::get('/api/notifications/datatable', [NotificationLogController::class, 'datatable'])->name('api.notifications.datatable');
+        Route::get('/api/configurations', [SystemConfigurationController::class, 'datatable'])->name('api.configurations.datatable');
+        Route::put('/api/configurations', [SystemConfigurationController::class, 'update'])->name('api.configurations.update');
     });
 
     Route::prefix('portal')->name('portal.')->group(function () {
