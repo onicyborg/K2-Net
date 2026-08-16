@@ -62,12 +62,6 @@
             </div>
         </form>
 
-        <div class="text-gray-500 fw-semibold fs-5 mt-5 text-center">
-            <a href="{{ route('portal.login') }}" class="link-primary fw-bold">
-                Login sebagai Pelanggan
-            </a>
-        </div>
-
     </div>
 </div>
 @endsection
