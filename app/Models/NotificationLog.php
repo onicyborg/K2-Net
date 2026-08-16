@@ -61,12 +61,14 @@ class NotificationLog extends Model
     public function typeLabel(): string
     {
         return match ($this->notification_type) {
-            'reminder_h3'      => 'Invoice Baru',
-            'reminder_before'  => 'Pengingat Sebelum Jatuh Tempo',
-            'reminder_overdue' => 'Pengingat Lewat Jatuh Tempo',
-            'confirmation'     => 'Konfirmasi Pembayaran',
-            'rejection'        => 'Penolakan Pembayaran',
-            default            => $this->notification_type,
+            'reminder_h3'             => 'Invoice Baru',
+            'reminder_before'         => 'Pengingat Sebelum Jatuh Tempo',
+            'reminder_overdue'        => 'Pengingat Lewat Jatuh Tempo',
+            'confirmation'            => 'Konfirmasi Pembayaran',
+            'rejection'               => 'Penolakan Pembayaran',
+            'billing_reminder_active' => 'Pengingat Tagihan Aktif (Tgl 1)',
+            'billing_reminder_due'    => 'Pengingat Jatuh Tempo (Tgl 15)',
+            default                   => $this->notification_type,
         };
     }
 }

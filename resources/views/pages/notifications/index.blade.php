@@ -78,11 +78,13 @@
 
     var renderType = function (row) {
         var typeColors = {
-            'reminder_h3':      'primary',
-            'reminder_before':   'warning',
-            'reminder_overdue':  'danger',
-            'confirmation':      'success',
-            'rejection':         'dark'
+            'reminder_h3':             'primary',
+            'reminder_before':         'warning',
+            'reminder_overdue':        'danger',
+            'confirmation':            'success',
+            'rejection':               'dark',
+            'billing_reminder_active': 'info',
+            'billing_reminder_due':    'warning'
         };
         var color = typeColors[row.type] || 'secondary';
         return '<span class="badge badge-' + color + '">' + (row.type_label || row.type) + '</span>';
