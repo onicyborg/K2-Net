@@ -19,8 +19,10 @@
         {{-- Mobile Logo --}}
         <div class="d-flex align-items-center flex-grow-1 flex-lg-grow-0">
             <a href="{{ route('admin.dashboard') }}" class="d-lg-none">
-                <img alt="Logo" src="https://magang.skripsian.site/assets/media/logos/default-small.svg"
-                     class="h-30px" />
+                <img alt="Logo" src="{{ url('images/logo-text-small.png') }}"
+                     class="h-30px theme-logo theme-logo-light" />
+                <img alt="Logo" src="{{ url('images/logo-text-dark-small.png') }}"
+                     class="h-30px theme-logo theme-logo-dark" />
             </a>
         </div>
 

@@ -11,10 +11,10 @@
     {{-- Logo --}}
     <div class="app-sidebar-logo px-6" id="kt_app_sidebar_logo">
         <a href="{{ route('admin.dashboard') }}">
-            <img alt="Logo" src="https://magang.skripsian.site/assets/media/logos/default-dark.svg"
-                 class="h-25px app-sidebar-logo-default" />
-            <img alt="Logo" src="https://magang.skripsian.site/assets/media/logos/default-small.svg"
-                 class="h-20px app-sidebar-logo-minimize" />
+            <img alt="Logo" src="{{ url('images/logo-text-dark-medium.png') }}"
+                 class="h-30px app-sidebar-logo-default" />
+            <img alt="Logo" src="{{ url('images/logo-icon-dark-80.png') }}"
+                 class="h-30px app-sidebar-logo-minimize" />
         </a>
     </div>
 

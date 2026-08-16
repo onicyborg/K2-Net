@@ -7,8 +7,10 @@
     <div class="card-body py-15 py-lg-10">
 
         <div class="mb-5 text-center">
-            <img alt="Logo" src="https://magang.skripsian.site/assets/media/logos/default-dark.svg"
-                 class="h-40px mb-5 mx-auto" />
+            <img alt="Logo" src="{{ url('images/logo-text-large.png') }}"
+                 class="h-40px mb-5 mx-auto theme-logo theme-logo-light" />
+            <img alt="Logo" src="{{ url('images/logo-text-dark-large.png') }}"
+                 class="h-40px mb-5 mx-auto theme-logo theme-logo-dark" />
             <h1 class="fw-bolder text-gray-900 mb-2">K2-Net Admin</h1>
             <p class="text-gray-500 fw-semibold">Sistem Manajemen Tagihan & Pelanggan</p>
         </div>

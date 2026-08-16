@@ -6,11 +6,20 @@
     <meta name="csrf-token" content="{{ csrf_token() }}" />
     <title>@yield('title', 'K2-Net')</title>
 
+    <link rel="icon" type="image/x-icon" href="{{ url('favicon.ico') }}" />
+    <link rel="shortcut icon" href="{{ url('favicon.ico') }}" />
+
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700" />
     <link href="https://magang.skripsian.site/assets/plugins/global/plugins.bundle.css" rel="stylesheet" type="text/css" />
     <link href="https://magang.skripsian.site/assets/css/style.bundle.css" rel="stylesheet" type="text/css" />
 
     @stack('styles')
+    <style>
+        .theme-logo { display: inline-block; }
+        .theme-logo-dark  { display: none; }
+        [data-bs-theme="dark"] .theme-logo-light { display: none; }
+        [data-bs-theme="dark"] .theme-logo-dark  { display: inline-block; }
+    </style>
 </head>
 <body id="kt_body" class="app-blank bgi-size-cover bgi-position-center bgi-no-repeat">
 
