@@ -11,6 +11,7 @@ use App\Models\Invoice;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
 {
@@ -186,6 +187,22 @@ class ReportController extends Controller
         ]);
     }
 
+    /**
+     * SQL expression for truncating a date to the first day of its month.
+     * Postgres: DATE_TRUNC('month', col). MySQL: DATE_FORMAT(col, '%Y-%m-01').
+     */
+    private function monthTrunc(string $column): string
+    {
+        $driver = DB::connection()->getDriverName();
+
+        if ($driver === 'pgsql') {
+            return "DATE_TRUNC('month', $column)";
+        }
+
+        // MySQL / MariaDB — DATE_FORMAT returns string; CAST back to DATE for sorting consistency
+        return "DATE_FORMAT($column, '%Y-%m-01')";
+    }
+
     private function serverRevenue($draw, $start, $length, $fromDate, $toDate): JsonResponse
     {
         $query = Invoice::query();
@@ -194,24 +211,29 @@ class ReportController extends Controller
         if ($toDate)   { $query->where('billing_period', '<=', $toDate); }
 
         $total = Invoice::count();
+        $trunc = $this->monthTrunc('billing_period');
 
         $monthly = $query
-            ->selectRaw("DATE_TRUNC('month', billing_period) as month")
+            ->selectRaw("$trunc as month")
             ->selectRaw('COUNT(*) as total_count')
             ->selectRaw("SUM(CASE WHEN status = 'lunas' THEN 1 ELSE 0 END) as paid_count")
             ->selectRaw("SUM(CASE WHEN status = 'lunas' THEN amount ELSE 0 END) as paid_amount")
             ->selectRaw("SUM(CASE WHEN status != 'lunas' THEN amount ELSE 0 END) as outstanding_amount")
-            ->groupByRaw("DATE_TRUNC('month', billing_period)")
-            ->orderByRaw("DATE_TRUNC('month', billing_period)")
+            ->groupByRaw($trunc)
+            ->orderByRaw($trunc)
             ->get()
-            ->map(fn ($row) => [
-                'month'             => Carbon::parse($row->month)->format('M Y'),
-                'month_raw'         => $row->month,
-                'total_count'       => (int) $row->total_count,
-                'paid_count'        => (int) $row->paid_count,
-                'paid_amount'       => (int) $row->paid_amount,
-                'outstanding_amount' => (int) $row->outstanding_amount,
-            ]);
+            ->map(function ($row) {
+                // MySQL returns string from DATE_FORMAT; normalize to date string
+                $monthRaw = is_string($row->month) ? $row->month : Carbon::parse($row->month)->toDateString();
+                return [
+                    'month'             => Carbon::parse($monthRaw)->format('M Y'),
+                    'month_raw'         => $monthRaw,
+                    'total_count'       => (int) $row->total_count,
+                    'paid_count'        => (int) $row->paid_count,
+                    'paid_amount'       => (int) $row->paid_amount,
+                    'outstanding_amount'=> (int) $row->outstanding_amount,
+                ];
+            });
 
         $filtered = $monthly->count();
         $paginated = $monthly->slice($start, $length)->values();
@@ -282,22 +304,27 @@ class ReportController extends Controller
         if ($fromDate) { $query->where('billing_period', '>=', $fromDate); }
         if ($toDate)   { $query->where('billing_period', '<=', $toDate); }
 
+        $trunc = $this->monthTrunc('billing_period');
+
         return $query
-            ->selectRaw("DATE_TRUNC('month', billing_period) as month")
+            ->selectRaw("$trunc as month")
             ->selectRaw('COUNT(*) as total_count')
             ->selectRaw("SUM(CASE WHEN status = 'lunas' THEN 1 ELSE 0 END) as paid_count")
             ->selectRaw("SUM(CASE WHEN status = 'lunas' THEN amount ELSE 0 END) as paid_amount")
             ->selectRaw("SUM(CASE WHEN status != 'lunas' THEN amount ELSE 0 END) as outstanding_amount")
-            ->groupByRaw("DATE_TRUNC('month', billing_period)")
-            ->orderByRaw("DATE_TRUNC('month', billing_period)")
+            ->groupByRaw($trunc)
+            ->orderByRaw($trunc)
             ->get()
-            ->map(fn ($row) => [
-                'month'             => Carbon::parse($row->month)->format('M Y'),
-                'total_count'       => (int) $row->total_count,
-                'paid_count'        => (int) $row->paid_count,
-                'paid_amount'       => (int) $row->paid_amount,
-                'outstanding_amount'=> (int) $row->outstanding_amount,
-            ])->toArray();
+            ->map(function ($row) {
+                $monthRaw = is_string($row->month) ? $row->month : Carbon::parse($row->month)->toDateString();
+                return [
+                    'month'             => Carbon::parse($monthRaw)->format('M Y'),
+                    'total_count'       => (int) $row->total_count,
+                    'paid_count'        => (int) $row->paid_count,
+                    'paid_amount'       => (int) $row->paid_amount,
+                    'outstanding_amount'=> (int) $row->outstanding_amount,
+                ];
+            })->toArray();
     }
 
     private function invoicesData(?string $fromDate, ?string $toDate): array
