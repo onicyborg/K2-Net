@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\Invoice;
 use App\Models\NotificationLog;
 use App\Models\SystemConfiguration;
+use App\Notifications\EmailTemplates;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -89,50 +90,35 @@ class InvoiceReminderCommand extends Command
 
         try {
             Mail::send([], [], function ($message) use ($user, $invoice, $portalUrl, $subject, $isOverdue) {
+                $accentColor = $isOverdue ? '#dc2626' : EmailTemplates::PRIMARY_COLOR;
+                $logoCid = EmailTemplates::attachLogo($message);
+
+                $content = EmailTemplates::greeting($user->name);
+                $content .= EmailTemplates::paragraph(
+                    $isOverdue
+                        ? 'Tagihan Anda sudah <strong>melewati</strong> tanggal jatuh tempo. Segera lakukan pembayaran agar layanan tidak terganggu.'
+                        : 'Tagihan Anda akan jatuh tempo dalam <strong>3 hari</strong>. Harap segera lakukan pembayaran.'
+                );
+                $content .= EmailTemplates::invoiceTable([
+                    [
+                        'invoice_number' => $invoice->invoice_number,
+                        'billing_period' => $invoice->billing_period->format('F Y'),
+                        'amount' => 'Rp ' . $invoice->formattedAmount(),
+                        'due_date' => $invoice->due_date->format('d M Y'),
+                    ],
+                ]);
+                $content .= EmailTemplates::ctaButton($portalUrl, 'Bayar Sekarang', $accentColor);
+                $content .= EmailTemplates::fallbackLink($portalUrl);
+
                 $message->to($user->email, $user->name)
                     ->subject($subject)
-                    ->html("
-                        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
-                            <div style='background: " . ($isOverdue ? '#dc2626' : '#f59e0b') . "; color: white; padding: 20px; text-align: center;'>
-                                <h2 style='margin:0;'>K2-Net</h2>
-                                <p style='margin:5px 0 0;'>" . ($isOverdue ? 'Tagihan Lewat Jatuh Tempo' : 'Pengingat Tagihan') . "</p>
-                            </div>
-                            <div style='padding: 20px; background: #f9f9f9;'>
-                                <p>Halo <strong>{$user->name}</strong>,</p>
-                                <p>" . ($isOverdue
-                                    ? 'Tagihan Anda sudah <strong>melewati</strong> tanggal jatuh tempo. Segera lakukan pembayaran agar layanan tidak terganggu.'
-                                    : 'Tagihan Anda akan jatuh tempo dalam <strong>3 hari</strong>. Harap segera lakukan pembayaran.') . "</p>
-                                <table style='width: 100%; border-collapse: collapse; margin: 15px 0;'>
-                                    <tr>
-                                        <td style='padding:8px; border:1px solid #ddd;'>No. Tagihan</td>
-                                        <td style='padding:8px; border:1px solid #ddd; font-weight:bold;'>{$invoice->invoice_number}</td>
-                                    </tr>
-                                    <tr style='background:#f0f0f0;'>
-                                        <td style='padding:8px; border:1px solid #ddd;'>Periode</td>
-                                        <td style='padding:8px; border:1px solid #ddd;'>{$invoice->billing_period->format('F Y')}</td>
-                                    </tr>
-                                    <tr>
-                                        <td style='padding:8px; border:1px solid #ddd;'>Jumlah</td>
-                                        <td style='padding:8px; border:1px solid #ddd; font-weight:bold; color:" . ($isOverdue ? '#dc2626' : '#f59e0b') . ";'>Rp {$invoice->formattedAmount()}</td>
-                                    </tr>
-                                    <tr style='background:#f0f0f0;'>
-                                        <td style='padding:8px; border:1px solid #ddd;'>Jatuh Tempo</td>
-                                        <td style='padding:8px; border:1px solid #ddd;'>{$invoice->due_date->format('d M Y')}</td>
-                                    </tr>
-                                </table>
-                                <p style='text-align: center; margin: 20px 0;'>
-                                    <a href='{$portalUrl}' style='background: " . ($isOverdue ? '#dc2626' : '#f59e0b') . "; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;'>Bayar Sekarang</a>
-                                </p>
-                                <p style='color: #666; font-size: 12px; text-align: center;'>
-                                    Atau salin tautan berikut ke browser:<br/>
-                                    <a href='{$portalUrl}' style='color: #0091ea;'>{$portalUrl}</a>
-                                </p>
-                            </div>
-                            <div style='padding: 15px; text-align: center; color: #999; font-size: 12px; border-top: 1px solid #eee;'>
-                                K2-Net — Sistem Manajemen Tagihan & Pelanggan
-                            </div>
-                        </div>
-                    ");
+                    ->html(EmailTemplates::wrapper(
+                        $content,
+                        $isOverdue ? 'Tagihan Lewat Jatuh Tempo' : 'Pengingat Tagihan',
+                        'K2-Net — Sistem Manajemen Tagihan & Pelanggan',
+                        $accentColor,
+                        $logoCid
+                    ));
             });
 
             NotificationLog::create([

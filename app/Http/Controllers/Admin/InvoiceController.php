@@ -10,6 +10,7 @@ use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\NotificationLog;
 use App\Models\Package;
+use App\Notifications\EmailTemplates;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -250,50 +251,42 @@ class InvoiceController extends Controller
 
         try {
             Mail::send([], [], function ($message) use ($user, $invoiceRows, $totalAmount, $portalUrl, $generatedMonth, $count, $subject) {
+                $logoCid = EmailTemplates::attachLogo($message);
+
+                $content = EmailTemplates::greeting($user->name);
+                $content .= EmailTemplates::paragraph("Berikut {$count} tagihan internet Anda untuk periode <strong>{$generatedMonth}</strong>. Harap lakukan pembayaran sebelum tanggal jatuh tempo.");
+
+                $content .= '<table width="100%" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:20px 0;font-size:13px;">
+                    <thead>
+                        <tr style="background-color:#f3f4f6;">
+                            <th style="padding:10px 12px;text-align:left;font-weight:600;color:#374151;border-bottom:2px solid #e5e7eb;">No. Tagihan</th>
+                            <th style="padding:10px 12px;text-align:left;font-weight:600;color:#374151;border-bottom:2px solid #e5e7eb;">Periode</th>
+                            <th style="padding:10px 12px;text-align:right;font-weight:600;color:#374151;border-bottom:2px solid #e5e7eb;">Jumlah</th>
+                            <th style="padding:10px 12px;text-align:left;font-weight:600;color:#374151;border-bottom:2px solid #e5e7eb;">Jatuh Tempo</th>
+                        </tr>
+                    </thead>
+                    <tbody>' . $invoiceRows . '</tbody>
+                    <tfoot>
+                        <tr style="background-color:#fff7ed;font-weight:700;">
+                            <td colspan="2" style="padding:12px;border-top:2px solid ' . EmailTemplates::PRIMARY_COLOR . ';">TOTAL</td>
+                            <td style="padding:12px;border-top:2px solid ' . EmailTemplates::PRIMARY_COLOR . ';text-align:right;color:' . EmailTemplates::PRIMARY_COLOR . ';">Rp ' . number_format($totalAmount, 0, ',', '.') . '</td>
+                            <td style="padding:12px;border-top:2px solid ' . EmailTemplates::PRIMARY_COLOR . ';"></td>
+                        </tr>
+                    </tfoot>
+                </table>';
+
+                $content .= EmailTemplates::ctaButton($portalUrl, 'Bayar Sekarang');
+                $content .= EmailTemplates::fallbackLink($portalUrl);
+
                 $message->to($user->email, $user->name)
                     ->subject($subject)
-                    ->html("
-                        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
-                            <div style='background: #0091ea; color: white; padding: 20px; text-align: center;'>
-                                <h2 style='margin:0;'>K2-Net</h2>
-                                <p style='margin:5px 0 0;'>Tagihan Internet</p>
-                            </div>
-                            <div style='padding: 20px; background: #f9f9f9;'>
-                                <p>Halo <strong>{$user->name}</strong>,</p>
-                                <p>Berikut {$count} tagihan Anda:</p>
-                                <table style='width: 100%; border-collapse: collapse; margin: 15px 0;'>
-                                    <thead>
-                                        <tr style='background:#e5e5e5;'>
-                                            <th style='padding:8px;border:1px solid #ddd;text-align:left;'>No. Tagihan</th>
-                                            <th style='padding:8px;border:1px solid #ddd;text-align:left;'>Periode</th>
-                                            <th style='padding:8px;border:1px solid #ddd;text-align:right;'>Jumlah</th>
-                                            <th style='padding:8px;border:1px solid #ddd;text-align:left;'>Jatuh Tempo</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {$invoiceRows}
-                                    </tbody>
-                                    <tfoot>
-                                        <tr style='background:#dbeafe;font-weight:bold;'>
-                                            <td colspan='2' style='padding:8px;border:1px solid #ddd;'>TOTAL</td>
-                                            <td style='padding:8px;border:1px solid #ddd;text-align:right;'>Rp " . number_format($totalAmount, 0, ',', '.') . "</td>
-                                            <td style='padding:8px;border:1px solid #ddd;'></td>
-                                        </tr>
-                                    </tfoot>
-                                </table>
-                                <p style='text-align: center; margin: 20px 0;'>
-                                    <a href='{$portalUrl}' style='background: #0091ea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;'>Bayar Sekarang</a>
-                                </p>
-                                <p style='color: #666; font-size: 12px; text-align: center;'>
-                                    Atau salin tautan berikut ke browser:<br/>
-                                    <a href='{$portalUrl}' style='color: #0091ea;'>{$portalUrl}</a>
-                                </p>
-                            </div>
-                            <div style='padding: 15px; text-align: center; color: #999; font-size: 12px; border-top: 1px solid #eee;'>
-                                K2-Net — Sistem Manajemen Tagihan & Pelanggan
-                            </div>
-                        </div>
-                    ");
+                    ->html(EmailTemplates::wrapper(
+                        $content,
+                        'Tagihan Internet',
+                        'K2-Net — Sistem Manajemen Tagihan & Pelanggan',
+                        EmailTemplates::PRIMARY_COLOR,
+                        $logoCid
+                    ));
             });
             return ['status' => 'success', 'email' => $user->email, 'count' => $count];
         } catch (\Throwable $e) {

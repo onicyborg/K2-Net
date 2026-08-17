@@ -7,6 +7,7 @@ use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\NotificationLog;
 use App\Models\SystemConfiguration;
+use App\Notifications\EmailTemplates;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Mail;
@@ -135,48 +136,30 @@ class AutoGenerateInvoiceCommand extends Command
 
         try {
             Mail::send([], [], function ($message) use ($user, $invoice, $portalUrl, $subject) {
+                $logoCid = EmailTemplates::attachLogo($message);
+
+                $content = EmailTemplates::greeting($user->name);
+                $content .= EmailTemplates::paragraph('Berikut tagihan internet Anda untuk periode <strong>' . $invoice->billing_period->format('F Y') . '</strong>. Harap lakukan pembayaran sebelum tanggal jatuh tempo.');
+                $content .= EmailTemplates::invoiceTable([
+                    [
+                        'invoice_number' => $invoice->invoice_number,
+                        'billing_period' => $invoice->billing_period->format('F Y'),
+                        'amount' => 'Rp ' . $invoice->formattedAmount(),
+                        'due_date' => $invoice->due_date->format('d M Y'),
+                    ],
+                ]);
+                $content .= EmailTemplates::ctaButton($portalUrl, 'Bayar Sekarang');
+                $content .= EmailTemplates::fallbackLink($portalUrl);
+
                 $message->to($user->email, $user->name)
                     ->subject($subject)
-                    ->html("
-                        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
-                            <div style='background: #0091ea; color: white; padding: 20px; text-align: center;'>
-                                <h2 style='margin:0;'>K2-Net</h2>
-                                <p style='margin:5px 0 0;'>Tagihan Internet</p>
-                            </div>
-                            <div style='padding: 20px; background: #f9f9f9;'>
-                                <p>Halo <strong>{$user->name}</strong>,</p>
-                                <p>Berikut tagihan Anda:</p>
-                                <table style='width: 100%; border-collapse: collapse; margin: 15px 0;'>
-                                    <thead>
-                                        <tr style='background:#e5e5e5;'>
-                                            <th style='padding:8px;border:1px solid #ddd;text-align:left;'>No. Tagihan</th>
-                                            <th style='padding:8px;border:1px solid #ddd;text-align:left;'>Periode</th>
-                                            <th style='padding:8px;border:1px solid #ddd;text-align:right;'>Jumlah</th>
-                                            <th style='padding:8px;border:1px solid #ddd;text-align:left;'>Jatuh Tempo</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td style='padding:8px;border:1px solid #ddd;'>{$invoice->invoice_number}</td>
-                                            <td style='padding:8px;border:1px solid #ddd;'>{$invoice->billing_period->format('F Y')}</td>
-                                            <td style='padding:8px;border:1px solid #ddd;text-align:right;'>Rp {$invoice->formattedAmount()}</td>
-                                            <td style='padding:8px;border:1px solid #ddd;'>{$invoice->due_date->format('d M Y')}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                                <p style='text-align: center; margin: 20px 0;'>
-                                    <a href='{$portalUrl}' style='background: #0091ea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;'>Bayar Sekarang</a>
-                                </p>
-                                <p style='color: #666; font-size: 12px; text-align: center;'>
-                                    Atau salin tautan berikut ke browser:<br/>
-                                    <a href='{$portalUrl}' style='color: #0091ea;'>{$portalUrl}</a>
-                                </p>
-                            </div>
-                            <div style='padding: 15px; text-align: center; color: #999; font-size: 12px; border-top: 1px solid #eee;'>
-                                K2-Net — Sistem Manajemen Tagihan & Pelanggan
-                            </div>
-                        </div>
-                    ");
+                    ->html(EmailTemplates::wrapper(
+                        $content,
+                        'Tagihan Internet',
+                        'K2-Net — Sistem Manajemen Tagihan & Pelanggan',
+                        EmailTemplates::PRIMARY_COLOR,
+                        $logoCid
+                    ));
             });
         } catch (\Throwable $e) {
             $this->warn("  [EMAIL FAILED] {$user->email} — {$e->getMessage()}");

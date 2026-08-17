@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Invoice;
 use App\Models\NotificationLog;
+use App\Notifications\EmailTemplates;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -60,42 +61,27 @@ class PaymentConfirmationCommand extends Command
 
         try {
             Mail::send([], [], function ($message) use ($user, $invoice, $portalUrl, $subject) {
+                $logoCid = EmailTemplates::attachLogo($message);
+
+                $content = EmailTemplates::greeting($user->name);
+                $content .= EmailTemplates::paragraph('Pembayaran Anda telah <strong>dikonfirmasi</strong>. Terima kasih atas pembayarannya. Layanan internet Anda tetap aktif.');
+                $content .= EmailTemplates::paymentDetailTable([
+                    ['label' => 'No. Tagihan', 'value' => $invoice->invoice_number],
+                    ['label' => 'Periode', 'value' => $invoice->billing_period->format('F Y')],
+                    ['label' => 'Jumlah', 'value' => 'Rp ' . $invoice->formattedAmount()],
+                    ['label' => 'Lunas Pada', 'value' => $invoice->paid_at?->format('d M Y') ?? now()->format('d M Y')],
+                ]);
+                $content .= EmailTemplates::alert('Semua tagihan lunas. Terima kasih!', 'success', '#16a34a');
+
                 $message->to($user->email, $user->name)
                     ->subject($subject)
-                    ->html("
-                        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
-                            <div style='background: #16a34a; color: white; padding: 20px; text-align: center;'>
-                                <h2 style='margin:0;'>K2-Net</h2>
-                                <p style='margin:5px 0 0;'>Pembayaran Dikonfirmasi</p>
-                            </div>
-                            <div style='padding: 20px; background: #f9f9f9;'>
-                                <p>Halo <strong>{$user->name}</strong>,</p>
-                                <p>Pembayaran Anda telah <strong>dikonfirmasi</strong>. Terima kasih atas pembayarannya.</p>
-                                <table style='width: 100%; border-collapse: collapse; margin: 15px 0;'>
-                                    <tr>
-                                        <td style='padding:8px; border:1px solid #ddd;'>No. Tagihan</td>
-                                        <td style='padding:8px; border:1px solid #ddd; font-weight:bold;'>{$invoice->invoice_number}</td>
-                                    </tr>
-                                    <tr style='background:#f0f0f0;'>
-                                        <td style='padding:8px; border:1px solid #ddd;'>Periode</td>
-                                        <td style='padding:8px; border:1px solid #ddd;'>{$invoice->billing_period->format('F Y')}</td>
-                                    </tr>
-                                    <tr>
-                                        <td style='padding:8px; border:1px solid #ddd;'>Jumlah</td>
-                                        <td style='padding:8px; border:1px solid #ddd; font-weight:bold; color:#16a34a;'>Rp {$invoice->formattedAmount()}</td>
-                                    </tr>
-                                    <tr style='background:#f0f0f0;'>
-                                        <td style='padding:8px; border:1px solid #ddd;'>Lunas Pada</td>
-                                        <td style='padding:8px; border:1px solid #ddd;'>{$invoice->paid_at?->format('d M Y') ?? now()->format('d M Y')}</td>
-                                    </tr>
-                                </table>
-                                <p>Jika ada pertanyaan, silakan hubungi kami.</p>
-                            </div>
-                            <div style='padding: 15px; text-align: center; color: #999; font-size: 12px; border-top: 1px solid #eee;'>
-                                K2-Net — Sistem Manajemen Tagihan & Pelanggan
-                            </div>
-                        </div>
-                    ");
+                    ->html(EmailTemplates::wrapper(
+                        $content,
+                        'Pembayaran Dikonfirmasi',
+                        'K2-Net — Sistem Manajemen Tagihan & Pelanggan',
+                        '#16a34a',
+                        $logoCid
+                    ));
             });
 
             NotificationLog::create([

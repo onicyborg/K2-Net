@@ -6,6 +6,7 @@ use App\Enums\NotificationType;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\NotificationLog;
+use App\Notifications\EmailTemplates;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -127,14 +128,65 @@ class SendBillingRemindersCommand extends Command
             ? "Tagihan Baru {$invoice->invoice_number} — K2-Net"
             : "Pengingat: Tagihan {$invoice->invoice_number} jatuh tempo hari ini — K2-Net";
 
-        $body = $isActive ? $this->activeEmailBody($user, $invoice, $portalUrl)
-                          : $this->dueEmailBody($user, $invoice, $portalUrl);
-
         try {
-            Mail::send([], [], function ($message) use ($user, $subject, $body) {
-                $message->to($user->email, $user->name)
-                    ->subject($subject)
-                    ->html($body);
+            Mail::send([], [], function ($message) use ($user, $subject, $invoice, $portalUrl, $isActive) {
+                $logoCid = EmailTemplates::attachLogo($message);
+
+                $content = EmailTemplates::greeting($user->name);
+
+                if ($isActive) {
+                    $period = $invoice->billing_period->format('F Y');
+                    $dueDate = $invoice->due_date->format('d M Y');
+                    $amount = $invoice->formattedAmount();
+
+                    $content .= EmailTemplates::paragraph("Tagihan internet K2-Net Anda untuk periode <strong>{$period}</strong> sudah diterbitkan. Harap lakukan pembayaran sebelum tanggal jatuh tempo.");
+                    $content .= EmailTemplates::invoiceTable([
+                        [
+                            'invoice_number' => $invoice->invoice_number,
+                            'billing_period' => $period,
+                            'amount' => "Rp {$amount}",
+                            'due_date' => $dueDate,
+                        ],
+                    ]);
+                    $content .= EmailTemplates::ctaButton($portalUrl, 'Bayar Sekarang');
+                    $content .= EmailTemplates::fallbackLink($portalUrl);
+
+                    $message->to($user->email, $user->name)
+                        ->subject($subject)
+                        ->html(EmailTemplates::wrapper(
+                            $content,
+                            'Tagihan Internet Bulanan',
+                            'K2-Net — Sistem Manajemen Tagihan & Pelanggan',
+                            EmailTemplates::PRIMARY_COLOR,
+                            $logoCid
+                        ));
+                } else {
+                    $period = $invoice->billing_period->format('F Y');
+                    $dueDate = $invoice->due_date->format('d M Y');
+                    $amount = $invoice->formattedAmount();
+
+                    $content .= EmailTemplates::paragraph('Ini adalah pengingat bahwa tagihan internet Anda <strong>jatuh tempo hari ini</strong>. Mohon segera lakukan pembayaran agar layanan tidak terganggu.');
+                    $content .= EmailTemplates::invoiceTable([
+                        [
+                            'invoice_number' => $invoice->invoice_number,
+                            'billing_period' => $period,
+                            'amount' => "Rp {$amount}",
+                            'due_date' => $dueDate,
+                        ],
+                    ]);
+                    $content .= EmailTemplates::ctaButton($portalUrl, 'Bayar Sekarang', '#f59e0b');
+                    $content .= EmailTemplates::fallbackLink($portalUrl);
+
+                    $message->to($user->email, $user->name)
+                        ->subject($subject)
+                        ->html(EmailTemplates::wrapper(
+                            $content,
+                            'Pengingat Jatuh Tempo',
+                            'K2-Net — Sistem Manajemen Tagihan & Pelanggan',
+                            '#f59e0b',
+                            $logoCid
+                        ));
+                }
             });
 
             NotificationLog::create([
@@ -220,101 +272,5 @@ class SendBillingRemindersCommand extends Command
                 'invoice'  => $invoice,
                 'customer' => $invoice->customer,
             ]);
-    }
-
-    protected function activeEmailBody($user, Invoice $invoice, string $portalUrl): string
-    {
-        $period = $invoice->billing_period->format('F Y');
-        $dueDate = $invoice->due_date->format('d M Y');
-        $amount = $invoice->formattedAmount();
-
-        return "
-            <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
-                <div style='background: #0091ea; color: white; padding: 20px; text-align: center;'>
-                    <h2 style='margin:0;'>K2-Net</h2>
-                    <p style='margin:5px 0 0;'>Tagihan Internet Bulanan</p>
-                </div>
-                <div style='padding: 20px; background: #f9f9f9;'>
-                    <p>Halo <strong>{$user->name}</strong>,</p>
-                    <p>Tagihan internet K2-Net Anda untuk periode <strong>{$period}</strong> sudah diterbitkan.</p>
-                    <table style='width: 100%; border-collapse: collapse; margin: 15px 0;'>
-                        <tr>
-                            <td style='padding:8px; border:1px solid #ddd;'>No. Tagihan</td>
-                            <td style='padding:8px; border:1px solid #ddd; font-weight:bold;'>{$invoice->invoice_number}</td>
-                        </tr>
-                        <tr style='background:#f0f0f0;'>
-                            <td style='padding:8px; border:1px solid #ddd;'>Periode</td>
-                            <td style='padding:8px; border:1px solid #ddd;'>{$period}</td>
-                        </tr>
-                        <tr>
-                            <td style='padding:8px; border:1px solid #ddd;'>Jumlah</td>
-                            <td style='padding:8px; border:1px solid #ddd; font-weight:bold; color:#0091ea;'>Rp {$amount}</td>
-                        </tr>
-                        <tr style='background:#f0f0f0;'>
-                            <td style='padding:8px; border:1px solid #ddd;'>Jatuh Tempo</td>
-                            <td style='padding:8px; border:1px solid #ddd;'>{$dueDate}</td>
-                        </tr>
-                    </table>
-                    <p style='text-align: center; margin: 20px 0;'>
-                        <a href='{$portalUrl}' style='background: #0091ea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;'>Bayar Sekarang</a>
-                    </p>
-                    <p style='color: #666; font-size: 12px; text-align: center;'>
-                        Atau salin tautan berikut ke browser:<br/>
-                        <a href='{$portalUrl}' style='color: #0091ea;'>{$portalUrl}</a>
-                    </p>
-                </div>
-                <div style='padding: 15px; text-align: center; color: #999; font-size: 12px; border-top: 1px solid #eee;'>
-                    K2-Net — Sistem Manajemen Tagihan & Pelanggan
-                </div>
-            </div>
-        ";
-    }
-
-    protected function dueEmailBody($user, Invoice $invoice, string $portalUrl): string
-    {
-        $period = $invoice->billing_period->format('F Y');
-        $dueDate = $invoice->due_date->format('d M Y');
-        $amount = $invoice->formattedAmount();
-
-        return "
-            <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
-                <div style='background: #f59e0b; color: white; padding: 20px; text-align: center;'>
-                    <h2 style='margin:0;'>K2-Net</h2>
-                    <p style='margin:5px 0 0;'>Pengingat Jatuh Tempo</p>
-                </div>
-                <div style='padding: 20px; background: #f9f9f9;'>
-                    <p>Halo <strong>{$user->name}</strong>,</p>
-                    <p>Ini adalah pengingat bahwa tagihan internet Anda <strong>jatuh tempo hari ini</strong>. Mohon segera lakukan pembayaran agar layanan tidak terganggu.</p>
-                    <table style='width: 100%; border-collapse: collapse; margin: 15px 0;'>
-                        <tr>
-                            <td style='padding:8px; border:1px solid #ddd;'>No. Tagihan</td>
-                            <td style='padding:8px; border:1px solid #ddd; font-weight:bold;'>{$invoice->invoice_number}</td>
-                        </tr>
-                        <tr style='background:#f0f0f0;'>
-                            <td style='padding:8px; border:1px solid #ddd;'>Periode</td>
-                            <td style='padding:8px; border:1px solid #ddd;'>{$period}</td>
-                        </tr>
-                        <tr>
-                            <td style='padding:8px; border:1px solid #ddd;'>Jumlah</td>
-                            <td style='padding:8px; border:1px solid #ddd; font-weight:bold; color:#f59e0b;'>Rp {$amount}</td>
-                        </tr>
-                        <tr style='background:#f0f0f0;'>
-                            <td style='padding:8px; border:1px solid #ddd;'>Jatuh Tempo</td>
-                            <td style='padding:8px; border:1px solid #ddd;'>{$dueDate}</td>
-                        </tr>
-                    </table>
-                    <p style='text-align: center; margin: 20px 0;'>
-                        <a href='{$portalUrl}' style='background: #f59e0b; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;'>Bayar Sekarang</a>
-                    </p>
-                    <p style='color: #666; font-size: 12px; text-align: center;'>
-                        Atau salin tautan berikut ke browser:<br/>
-                        <a href='{$portalUrl}' style='color: #0091ea;'>{$portalUrl}</a>
-                    </p>
-                </div>
-                <div style='padding: 15px; text-align: center; color: #999; font-size: 12px; border-top: 1px solid #eee;'>
-                    K2-Net — Sistem Manajemen Tagihan & Pelanggan
-                </div>
-            </div>
-        ";
     }
 }

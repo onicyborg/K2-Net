@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\NotificationLog;
 use App\Models\PaymentSubmission;
+use App\Notifications\EmailTemplates;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\JsonResponse;
@@ -189,81 +190,53 @@ class VerificationController extends Controller
         try {
             if ($type === 'confirmation') {
                 Mail::send([], [], function ($message) use ($user, $submission, $invoiceCount, $periodsText) {
+                    $logoCid = EmailTemplates::attachLogo($message);
+
+                    $content = EmailTemplates::greeting($user->name);
+                    $content .= EmailTemplates::paragraph('Pembayaran Anda telah <strong>diterima dan dikonfirmasi</strong>. Terima kasih atas pembayarannya.');
+                    $content .= EmailTemplates::paymentDetailTable([
+                        ['label' => 'Jumlah Tagihan', 'value' => $invoiceCount . ' tagihan'],
+                        ['label' => 'Periode', 'value' => $periodsText],
+                        ['label' => 'Jumlah Transfer', 'value' => $submission->formattedAmount()],
+                        ['label' => 'Tanggal Transfer', 'value' => $submission->transfer_date->format('d F Y')],
+                    ]);
+                    $content .= EmailTemplates::alert('Semua tagihan lunas. Terima kasih!', 'success', '#16a34a');
+
                     $message->to($user->email, $user->name)
                         ->subject("Pembayaran Diterima — {$invoiceCount} Tagihan")
-                        ->html("
-                            <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
-                                <div style='background: #16a34a; color: white; padding: 20px; text-align: center;'>
-                                    <h2 style='margin:0;'>✓ Pembayaran Diterima</h2>
-                                </div>
-                                <div style='padding: 20px; background: #f9f9f9;'>
-                                    <p>Halo <strong>{$user->name}</strong>,</p>
-                                    <p>Pembayaran Anda telah <strong>diterima dan dikonfirmasi</strong>.</p>
-                                    <table style='width: 100%; border-collapse: collapse; margin: 15px 0;'>
-                                        <tr>
-                                            <td style='padding: 8px; border: 1px solid #ddd;'>Jumlah Tagihan</td>
-                                            <td style='padding: 8px; border: 1px solid #ddd;'><strong>{$invoiceCount} tagihan</strong></td>
-                                        </tr>
-                                        <tr>
-                                            <td style='padding: 8px; border: 1px solid #ddd;'>Periode</td>
-                                            <td style='padding: 8px; border: 1px solid #ddd;'>{$periodsText}</td>
-                                        </tr>
-                                        <tr>
-                                            <td style='padding: 8px; border: 1px solid #ddd;'>Jumlah Transfer</td>
-                                            <td style='padding: 8px; border: 1px solid #ddd;'><strong>{$submission->formattedAmount()}</strong></td>
-                                        </tr>
-                                        <tr>
-                                            <td style='padding: 8px; border: 1px solid #ddd;'>Tanggal Transfer</td>
-                                            <td style='padding: 8px; border: 1px solid #ddd;'>{$submission->transfer_date->format('d F Y')}</td>
-                                        </tr>
-                                    </table>
-                                    <p style='color: #16a34a; font-weight: bold;'>✓ Semua Tagihan Lunas</p>
-                                </div>
-                                <div style='padding: 15px; text-align: center; color: #999; font-size: 12px;'>
-                                    K2-Net — Sistem Manajemen Tagihan & Pelanggan
-                                </div>
-                            </div>
-                        ");
+                        ->html(EmailTemplates::wrapper(
+                            $content,
+                            'Pembayaran Diterima',
+                            'K2-Net — Sistem Manajemen Tagihan & Pelanggan',
+                            '#16a34a',
+                            $logoCid
+                        ));
                 });
             } elseif ($type === 'rejection') {
                 Mail::send([], [], function ($message) use ($user, $submission, $invoiceCount, $periodsText) {
+                    $logoCid = EmailTemplates::attachLogo($message);
+
+                    $content = EmailTemplates::greeting($user->name);
+                    $content .= EmailTemplates::paragraph('Mohon maaf, pembayaran Anda telah <strong>ditolak</strong> dengan alasan:');
+                    $content .= EmailTemplates::alert($submission->rejection_reason, 'danger', '#dc2626');
+                    $content .= EmailTemplates::paymentDetailTable([
+                        ['label' => 'Jumlah Tagihan', 'value' => $invoiceCount . ' tagihan'],
+                        ['label' => 'Periode', 'value' => $periodsText],
+                        ['label' => 'Jumlah Transfer', 'value' => $submission->formattedAmount()],
+                    ]);
+                    $content .= EmailTemplates::paragraph('Silakan upload bukti pembayaran yang benar melalui tautan berikut:');
+                    $content .= EmailTemplates::ctaButton($submission->customer->getPortalUrl(), 'Bayar Ulang', '#dc2626');
+                    $content .= EmailTemplates::fallbackLink($submission->customer->getPortalUrl());
+
                     $message->to($user->email, $user->name)
                         ->subject("Pembayaran Ditolak — {$invoiceCount} Tagihan")
-                        ->html("
-                            <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
-                                <div style='background: #dc2626; color: white; padding: 20px; text-align: center;'>
-                                    <h2 style='margin:0;'>✗ Pembayaran Ditolak</h2>
-                                </div>
-                                <div style='padding: 20px; background: #f9f9f9;'>
-                                    <p>Halo <strong>{$user->name}</strong>,</p>
-                                    <p>Mohon maaf, pembayaran Anda telah <strong>ditolak</strong> dengan alasan:</p>
-                                    <div style='background: #fee2e2; border: 1px solid #fca5a5; padding: 12px; border-radius: 5px; margin: 15px 0;'>
-                                        {$submission->rejection_reason}
-                                    </div>
-                                    <table style='width: 100%; border-collapse: collapse; margin: 15px 0;'>
-                                        <tr>
-                                            <td style='padding: 8px; border: 1px solid #ddd;'>Jumlah Tagihan</td>
-                                            <td style='padding: 8px; border: 1px solid #ddd;'>{$invoiceCount} tagihan</td>
-                                        </tr>
-                                        <tr>
-                                            <td style='padding: 8px; border: 1px solid #ddd;'>Periode</td>
-                                            <td style='padding: 8px; border: 1px solid #ddd;'>{$periodsText}</td>
-                                        </tr>
-                                        <tr>
-                                            <td style='padding: 8px; border: 1px solid #ddd;'>Jumlah Transfer</td>
-                                            <td style='padding: 8px; border: 1px solid #ddd;'>{$submission->formattedAmount()}</td>
-                                        </tr>
-                                    </table>
-                                    <p style='text-align: center; margin: 20px 0;'>
-                                        Silakan upload bukti pembayaran yang benar melalui tautan berikut:<br/>
-                                        <a href='{$submission->customer->getPortalUrl()}' style='background: #0091ea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;'>Bayar Ulang</a>
-                                    </p>
-                                </div>
-                                <div style='padding: 15px; text-align: center; color: #999; font-size: 12px;'>
-                                    K2-Net — Sistem Manajemen Tagihan & Pelanggan
-                                </div>
-                            </div>
-                        ");
+                        ->html(EmailTemplates::wrapper(
+                            $content,
+                            'Pembayaran Ditolak',
+                            'K2-Net — Sistem Manajemen Tagihan & Pelanggan',
+                            '#dc2626',
+                            $logoCid
+                        ));
                 });
             }
         } catch (\Throwable $e) {
