@@ -13,7 +13,12 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PortalController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', fn () => redirect()->route('login'));
+Route::get('/', function () {
+    if (Auth::check()) {
+        return redirect()->route('admin.dashboard');
+    }
+    return redirect()->route('login');
+});
 
 // =============================================================
 // CRON ENDPOINTS (external cron via cron-job.org)
